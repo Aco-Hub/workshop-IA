@@ -1,1 +1,4 @@
 node_modules/
+
+# MCP config contains API keys - use .vscode/mcp.json.example instead
+.vscode/mcp.json
