@@ -1,0 +1,45 @@
+{
+  "version": 2,
+  "plugins": {
+    "voltagent-core-dev@voltagent-subagents": [
+      {
+        "scope": "user",
+        "installPath": "/home/aiaiso/.claude/plugins/cache/voltagent-subagents/voltagent-core-dev/1.0.1",
+        "version": "1.0.1",
+        "installedAt": "2026-03-26T10:06:04.746Z",
+        "lastUpdated": "2026-03-26T10:06:04.746Z",
+        "gitCommitSha": "8146b953a6951ea25268cf6d9ff5765f2483a58f"
+      }
+    ],
+    "voltagent-lang@voltagent-subagents": [
+      {
+        "scope": "user",
+        "installPath": "/home/aiaiso/.claude/plugins/cache/voltagent-subagents/voltagent-lang/1.0.3",
+        "version": "1.0.3",
+        "installedAt": "2026-03-26T10:06:05.632Z",
+        "lastUpdated": "2026-03-26T10:06:05.632Z",
+        "gitCommitSha": "8146b953a6951ea25268cf6d9ff5765f2483a58f"
+      }
+    ],
+    "voltagent-qa-sec@voltagent-subagents": [
+      {
+        "scope": "user",
+        "installPath": "/home/aiaiso/.claude/plugins/cache/voltagent-subagents/voltagent-qa-sec/1.0.1",
+        "version": "1.0.1",
+        "installedAt": "2026-03-26T10:06:06.067Z",
+        "lastUpdated": "2026-03-26T10:06:06.067Z",
+        "gitCommitSha": "8146b953a6951ea25268cf6d9ff5765f2483a58f"
+      }
+    ],
+    "voltagent-data-ai@voltagent-subagents": [
+      {
+        "scope": "user",
+        "installPath": "/home/aiaiso/.claude/plugins/cache/voltagent-subagents/voltagent-data-ai/1.0.2",
+        "version": "1.0.2",
+        "installedAt": "2026-03-26T10:06:06.381Z",
+        "lastUpdated": "2026-03-26T10:06:06.381Z",
+        "gitCommitSha": "8146b953a6951ea25268cf6d9ff5765f2483a58f"
+      }
+    ]
+  }
+}
