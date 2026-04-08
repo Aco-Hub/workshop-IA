@@ -1,0 +1,30 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    database-platform: org.hibernate.dialect.H2Dialect
+    show-sql: false
+  flyway:
+    enabled: false
+  mail:
+    host: localhost
+    port: 25
+
+app:
+  jwt:
+    secret-key: dGVzdC1zZWNyZXQta2V5LWZvci11bml0LXRlc3Rpbmctb25seS0xMjM0NTY3ODk=
+    expiration: 86400000
+    invite-expiration: 604800000
+  email:
+    from: test@test.com
+  base-url: http://localhost:5173
+
+discord:
+  client-id:
+  client-secret:
+  redirect-uri: http://localhost:8080/api/auth/discord/callback

@@ -1,0 +1,58 @@
+<main class="auth-page" role="main">
+  <div class="auth-card">
+    <div class="auth-header">
+      <div class="auth-logo">TS</div>
+      <h1 class="auth-title">{{ 'auth.welcome' | translate }}</h1>
+    </div>
+
+    <form class="auth-form" (ngSubmit)="onSubmit()" novalidate>
+      <div class="form-group">
+        <label class="form-label" for="email">{{ 'auth.email' | translate }}</label>
+        <input
+          id="email"
+          type="email"
+          class="form-input"
+          [value]="email()"
+          (input)="email.set($any($event.target).value)"
+          autocomplete="email"
+          required
+          placeholder="you@example.com"
+          data-testid="login-email-input"
+        />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="password">{{ 'auth.password' | translate }}</label>
+        <input
+          id="password"
+          type="password"
+          class="form-input"
+          [value]="password()"
+          (input)="password.set($any($event.target).value)"
+          autocomplete="current-password"
+          required
+          data-testid="login-password-input"
+        />
+      </div>
+
+      @if (error()) {
+        <div class="form-error" role="alert" data-testid="login-error">
+          {{ error() | translate }}
+        </div>
+      }
+
+      <button
+        type="submit"
+        class="btn btn-primary btn-full"
+        [disabled]="loading()"
+        data-testid="login-submit-btn"
+      >
+        @if (loading()) {
+          {{ 'common.loading' | translate }}
+        } @else {
+          {{ 'auth.sign_in' | translate }}
+        }
+      </button>
+    </form>
+  </div>
+</main>

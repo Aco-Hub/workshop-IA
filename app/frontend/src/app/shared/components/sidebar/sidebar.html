@@ -1,0 +1,372 @@
+<!-- Mobile overlay -->
+@if (mobileOpen()) {
+  <div class="sidebar-overlay" (click)="closeMobile()" data-testid="sidebar-overlay"></div>
+}
+
+<!-- Mobile hamburger -->
+<button
+  class="hamburger"
+  (click)="toggleMobile()"
+  [attr.aria-label]="'nav.open_menu' | translate"
+  data-testid="hamburger-btn"
+>
+  <span></span>
+  <span></span>
+  <span></span>
+</button>
+
+<!-- Sidebar -->
+<nav
+  class="sidebar"
+  [class.open]="mobileOpen()"
+  role="navigation"
+  aria-label="Main navigation"
+>
+  <!-- User section -->
+  <div class="sidebar-user">
+    <a
+      class="user-info"
+      [routerLink]="['/calendar', currentUser()?.id]"
+      (click)="closeMobile()"
+      data-testid="user-info-link"
+    >
+      @if (getAvatarUrl()) {
+        <img class="user-avatar" [src]="getAvatarUrl()" [alt]="currentUser()?.username" />
+      } @else {
+        <div class="user-avatar-placeholder" [style.background-color]="getDevColor(currentUser()!.id)">{{ getInitials() }}</div>
+      }
+      <div class="user-details">
+        <span class="user-name">{{ currentUser()?.username }}</span>
+        <span class="user-role">
+          @if (isAdmin()) {
+            {{ 'profile.admin' | translate }}
+          } @else {
+            {{ 'profile.standard' | translate }}
+          }
+        </span>
+      </div>
+    </a>
+    <button
+      class="logout-btn"
+      (click)="logout()"
+      [attr.aria-label]="'auth.logout' | translate"
+      data-testid="logout-btn"
+      title="{{ 'auth.logout' | translate }}"
+    >
+      ↪
+    </button>
+  </div>
+
+  <div class="sidebar-divider"></div>
+
+  <!-- Developers section -->
+  <div class="sidebar-section">
+    <button
+      class="section-header"
+      (click)="devsExpanded.update(v => !v)"
+      [attr.aria-expanded]="devsExpanded()"
+      data-testid="devs-section-toggle"
+    >
+      <span class="section-chevron" [class.rotated]="!devsExpanded()">›</span>
+      <span>{{ 'nav.developers' | translate }}</span>
+    </button>
+
+    @if (devsExpanded()) {
+      <div class="section-items">
+        @for (dev of developers(); track dev.id) {
+          <a
+            class="nav-item"
+            [routerLink]="['/calendar', dev.id]"
+            routerLinkActive="active"
+            (click)="closeMobile()"
+            [attr.data-testid]="'dev-link-' + dev.id"
+          >
+            @if (dev.discordAvatarUrl) {
+              <img class="item-avatar" [src]="dev.discordAvatarUrl" [alt]="dev.username" />
+            } @else {
+              <span class="item-avatar-placeholder" [style.background-color]="getDevColor(dev.id)">{{ dev.username.charAt(0).toUpperCase() }}</span>
+            }
+            <span class="item-label">{{ dev.username }}</span>
+            @if (dev.role === 'ADMIN') {
+              <span class="admin-badge" title="{{ 'profile.admin' | translate }}">★</span>
+            }
+          </a>
+        }
+        @if (developers().length === 0) {
+          <span class="nav-empty">{{ 'developer.no_developers' | translate }}</span>
+        }
+        @if (isAdmin()) {
+          <button
+            class="nav-action-btn"
+            (click)="openInviteModal()"
+            data-testid="invite-developer-btn"
+          >
+            <span class="action-icon">+</span>
+            {{ 'nav.add_developer' | translate }}
+          </button>
+        }
+      </div>
+    }
+  </div>
+
+  <div class="sidebar-divider"></div>
+
+  <!-- Projects section -->
+  <div class="sidebar-section">
+    <button
+      class="section-header"
+      (click)="projectsExpanded.update(v => !v)"
+      [attr.aria-expanded]="projectsExpanded()"
+      data-testid="projects-section-toggle"
+    >
+      <span class="section-chevron" [class.rotated]="!projectsExpanded()">›</span>
+      <span>{{ 'nav.projects' | translate }}</span>
+    </button>
+
+    @if (projectsExpanded()) {
+      <div class="section-items">
+        @for (project of projects(); track project.id) {
+          <a
+            class="nav-item"
+            [routerLink]="['/project', project.id]"
+            routerLinkActive="active"
+            (click)="closeMobile()"
+            [attr.data-testid]="'project-link-' + project.id"
+          >
+            <span class="item-icon">{{ project.type === 'EXTERNAL' ? '🔗' : '⚙️' }}</span>
+            <span class="item-label">{{ project.name }}</span>
+            @if (project.type === 'EXTERNAL') {
+              <span class="type-badge external">{{ 'project.external' | translate }}</span>
+            }
+          </a>
+        }
+        @if (projects().length === 0) {
+          <span class="nav-empty">{{ 'project.no_projects' | translate }}</span>
+        }
+        <button
+          class="nav-action-btn"
+          (click)="openCreateProjectModal()"
+          data-testid="create-project-btn"
+        >
+          <span class="action-icon">+</span>
+          {{ 'nav.create_project' | translate }}
+        </button>
+      </div>
+    }
+  </div>
+
+  <div class="sidebar-divider"></div>
+
+  <!-- Clients section -->
+  <div class="sidebar-section">
+    <button
+      class="section-header"
+      (click)="clientsExpanded.update(v => !v)"
+      [attr.aria-expanded]="clientsExpanded()"
+      data-testid="clients-section-toggle"
+    >
+      <span class="section-chevron" [class.rotated]="!clientsExpanded()">›</span>
+      <span>{{ 'nav.clients' | translate }}</span>
+    </button>
+
+    @if (clientsExpanded()) {
+      <div class="section-items">
+        @for (client of clients(); track client.id) {
+          <a
+            class="nav-item"
+            [routerLink]="['/client', client.id]"
+            routerLinkActive="active"
+            (click)="closeMobile()"
+            [attr.data-testid]="'client-link-' + client.id"
+          >
+            <span class="item-icon">🏢</span>
+            <span class="item-label">{{ client.name }}</span>
+          </a>
+        }
+        @if (clients().length === 0) {
+          <span class="nav-empty">{{ 'client.no_clients' | translate }}</span>
+        }
+        <button
+          class="nav-action-btn"
+          (click)="openCreateClientModal()"
+          data-testid="create-client-btn"
+        >
+          <span class="action-icon">+</span>
+          {{ 'nav.create_client' | translate }}
+        </button>
+      </div>
+    }
+  </div>
+
+  <!-- Bottom settings -->
+  <div class="sidebar-bottom">
+    <a
+      class="settings-link"
+      routerLink="/settings"
+      routerLinkActive="active"
+      (click)="closeMobile()"
+      data-testid="settings-link"
+    >
+      <span>⚙</span>
+      {{ 'nav.settings' | translate }}
+    </a>
+  </div>
+</nav>
+
+<!-- Invite Modal -->
+<app-modal
+  [isOpen]="showInviteModal()"
+  [title]="'developer.invite' | translate"
+  (closed)="showInviteModal.set(false)"
+>
+  @if (!inviteResult()) {
+    <form (ngSubmit)="sendInvite()" class="modal-form">
+      <div class="form-group">
+        <label class="form-label" for="invite-email">{{ 'developer.invite_email' | translate }}</label>
+        <input
+          id="invite-email"
+          type="email"
+          class="form-input"
+          [value]="inviteEmail()"
+          (input)="inviteEmail.set($any($event.target).value)"
+          autocomplete="email"
+          required
+          data-testid="invite-email-input"
+        />
+      </div>
+      @if (inviteError()) {
+        <p class="form-error">{{ inviteError() | translate }}</p>
+      }
+      <div class="form-actions">
+        <button type="button" class="btn btn-secondary" (click)="showInviteModal.set(false)" data-testid="invite-cancel-btn">
+          {{ 'common.cancel' | translate }}
+        </button>
+        <button type="submit" class="btn btn-primary" [disabled]="inviteLoading()" data-testid="invite-submit-btn">
+          @if (inviteLoading()) { {{ 'common.loading' | translate }} }
+          @else { {{ 'developer.invite_send' | translate }} }
+        </button>
+      </div>
+    </form>
+  } @else {
+    <div class="invite-result">
+      <p class="invite-success-msg">{{ 'developer.invite_success' | translate }}</p>
+      <div class="invite-link-box">
+        <code class="invite-link-text">{{ inviteResult()?.inviteLink }}</code>
+        <button class="btn btn-secondary btn-sm" (click)="copyInviteLink()" data-testid="copy-invite-link-btn">
+          {{ linkCopied() ? ('developer.link_copied' | translate) : ('developer.copy_link' | translate) }}
+        </button>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-primary" (click)="showInviteModal.set(false)" data-testid="invite-done-btn">
+          {{ 'common.close' | translate }}
+        </button>
+      </div>
+    </div>
+  }
+</app-modal>
+
+<!-- Create Project Modal -->
+<app-modal
+  [isOpen]="showCreateProjectModal()"
+  [title]="'project.create' | translate"
+  (closed)="showCreateProjectModal.set(false)"
+>
+  <form (ngSubmit)="submitCreateProject()" class="modal-form">
+    <div class="form-group">
+      <label class="form-label" for="project-name">{{ 'project.name' | translate }}</label>
+      <input
+        id="project-name"
+        type="text"
+        class="form-input"
+        [value]="newProject().name"
+        (input)="updateProjectName($any($event.target).value)"
+        required
+        data-testid="new-project-name-input"
+      />
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="project-type">{{ 'project.type' | translate }}</label>
+      <select
+        id="project-type"
+        class="form-input"
+        [value]="newProject().type"
+        (change)="updateProjectType($any($event.target).value)"
+        data-testid="new-project-type-select"
+      >
+        <option value="INTERNAL">{{ 'project.internal' | translate }}</option>
+        <option value="EXTERNAL">{{ 'project.external' | translate }}</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="project-repo">{{ 'project.repo_url' | translate }}</label>
+      <input
+        id="project-repo"
+        type="url"
+        class="form-input"
+        [value]="newProject().repoUrl"
+        (input)="updateProjectRepoUrl($any($event.target).value)"
+        data-testid="new-project-repo-input"
+      />
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="project-client">{{ 'project.client' | translate }}</label>
+      <select
+        id="project-client"
+        class="form-input"
+        (change)="updateProjectClientId($any($event.target).value)"
+        data-testid="new-project-client-select"
+      >
+        <option value="">{{ 'project.no_client' | translate }}</option>
+        @for (client of clients(); track client.id) {
+          <option [value]="client.id">{{ client.name }}</option>
+        }
+      </select>
+    </div>
+    @if (projectError()) {
+      <p class="form-error">{{ projectError() | translate }}</p>
+    }
+    <div class="form-actions">
+      <button type="button" class="btn btn-secondary" (click)="showCreateProjectModal.set(false)" data-testid="project-cancel-btn">
+        {{ 'common.cancel' | translate }}
+      </button>
+      <button type="submit" class="btn btn-primary" [disabled]="projectLoading()" data-testid="project-submit-btn">
+        @if (projectLoading()) { {{ 'common.loading' | translate }} }
+        @else { {{ 'common.create' | translate }} }
+      </button>
+    </div>
+  </form>
+</app-modal>
+
+<!-- Create Client Modal -->
+<app-modal
+  [isOpen]="showCreateClientModal()"
+  [title]="'client.create' | translate"
+  (closed)="showCreateClientModal.set(false)"
+>
+  <form (ngSubmit)="submitCreateClient()" class="modal-form">
+    <div class="form-group">
+      <label class="form-label" for="client-name">{{ 'client.name' | translate }}</label>
+      <input
+        id="client-name"
+        type="text"
+        class="form-input"
+        [value]="newClientName()"
+        (input)="newClientName.set($any($event.target).value)"
+        required
+        data-testid="new-client-name-input"
+      />
+    </div>
+    @if (clientError()) {
+      <p class="form-error">{{ clientError() | translate }}</p>
+    }
+    <div class="form-actions">
+      <button type="button" class="btn btn-secondary" (click)="showCreateClientModal.set(false)" data-testid="client-cancel-btn">
+        {{ 'common.cancel' | translate }}
+      </button>
+      <button type="submit" class="btn btn-primary" [disabled]="clientLoading()" data-testid="client-submit-btn">
+        @if (clientLoading()) { {{ 'common.loading' | translate }} }
+        @else { {{ 'common.create' | translate }} }
+      </button>
+    </div>
+  </form>
+</app-modal>

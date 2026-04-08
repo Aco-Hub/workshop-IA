@@ -1,0 +1,89 @@
+<main class="settings-page" role="main">
+  <header class="page-header">
+    <h1 class="page-title">{{ 'settings.title' | translate }}</h1>
+  </header>
+
+  <div class="settings-content">
+    <!-- Language section -->
+    <section class="settings-section" aria-labelledby="language-section-title">
+      <h2 class="section-title" id="language-section-title">{{ 'settings.language' | translate }}</h2>
+      <div class="settings-options" role="radiogroup" [attr.aria-label]="'settings.language' | translate">
+        <label class="option-item" data-testid="lang-fr-option">
+          <input
+            type="radio"
+            name="language"
+            value="fr"
+            [checked]="i18n.currentLanguage() === 'fr'"
+            (change)="setLanguage('fr')"
+            data-testid="lang-fr-radio"
+          />
+          <span class="option-flag">🇫🇷</span>
+          <span class="option-label">{{ 'settings.language_fr' | translate }}</span>
+        </label>
+        <label class="option-item" data-testid="lang-en-option">
+          <input
+            type="radio"
+            name="language"
+            value="en"
+            [checked]="i18n.currentLanguage() === 'en'"
+            (change)="setLanguage('en')"
+            data-testid="lang-en-radio"
+          />
+          <span class="option-flag">🇬🇧</span>
+          <span class="option-label">{{ 'settings.language_en' | translate }}</span>
+        </label>
+      </div>
+    </section>
+
+    <div class="section-divider"></div>
+
+    <!-- Theme section -->
+    <section class="settings-section" aria-labelledby="theme-section-title">
+      <h2 class="section-title" id="theme-section-title">{{ 'settings.theme' | translate }}</h2>
+      <div class="settings-options" role="radiogroup" [attr.aria-label]="'settings.theme' | translate">
+        <label class="option-item" data-testid="theme-light-option">
+          <input
+            type="radio"
+            name="theme"
+            value="light"
+            [checked]="theme.currentTheme() === 'light'"
+            (change)="setTheme('light')"
+            data-testid="theme-light-radio"
+          />
+          <span class="option-icon">☀️</span>
+          <div class="option-info">
+            <span class="option-label">{{ 'settings.theme_light' | translate }}</span>
+            <div class="theme-preview light-preview">
+              <div class="preview-sidebar"></div>
+              <div class="preview-content">
+                <div class="preview-line"></div>
+                <div class="preview-line short"></div>
+              </div>
+            </div>
+          </div>
+        </label>
+        <label class="option-item" data-testid="theme-dark-option">
+          <input
+            type="radio"
+            name="theme"
+            value="dark"
+            [checked]="theme.currentTheme() === 'dark'"
+            (change)="setTheme('dark')"
+            data-testid="theme-dark-radio"
+          />
+          <span class="option-icon">🌙</span>
+          <div class="option-info">
+            <span class="option-label">{{ 'settings.theme_dark' | translate }}</span>
+            <div class="theme-preview dark-preview">
+              <div class="preview-sidebar"></div>
+              <div class="preview-content">
+                <div class="preview-line"></div>
+                <div class="preview-line short"></div>
+              </div>
+            </div>
+          </div>
+        </label>
+      </div>
+    </section>
+  </div>
+</main>

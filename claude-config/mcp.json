@@ -27,7 +27,7 @@
         "--stdio"
       ],
       "env": {
-        "FIGMA_API_KEY": "YOUR_VALUE_HERE"
+        "FIGMA_API_KEY": ""
       }
     }
   }

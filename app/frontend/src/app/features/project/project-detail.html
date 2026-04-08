@@ -1,0 +1,354 @@
+<main class="detail-page" role="main">
+  @if (loading()) {
+    <app-loading-spinner></app-loading-spinner>
+  } @else if (!project()) {
+    <app-empty-state message="common.empty" icon="📁"></app-empty-state>
+  } @else {
+
+  <!-- Project header -->
+  <header class="detail-header">
+    <div class="header-main">
+      <div class="header-title-row">
+        <h1 class="detail-title">{{ project()!.name }}</h1>
+        <span class="type-badge" [class.external]="project()!.type === 'EXTERNAL'">
+          {{ (project()!.type === 'EXTERNAL' ? 'project.external' : 'project.internal') | translate }}
+        </span>
+      </div>
+      <div class="header-meta">
+        @if (project()!.client) {
+          <span class="meta-item">
+            🏢 {{ project()!.client!.name }}
+          </span>
+        }
+        @if (project()!.repoUrl) {
+          <a
+            class="meta-link"
+            [href]="project()!.repoUrl"
+            target="_blank"
+            rel="noopener noreferrer"
+            data-testid="repo-link"
+          >
+            ↗ {{ 'project.open_repo' | translate }}
+          </a>
+        }
+      </div>
+    </div>
+
+    <div class="header-actions">
+      @if (isAssigned()) {
+        <button class="btn btn-secondary btn-sm" (click)="leaveProject()" data-testid="leave-project-btn">
+          {{ 'project.unassign' | translate }}
+        </button>
+      } @else {
+        <button class="btn btn-primary btn-sm" (click)="joinProject()" data-testid="join-project-btn">
+          {{ 'project.assign' | translate }}
+        </button>
+      }
+      <button class="btn btn-secondary btn-sm" (click)="openEditModal()" data-testid="edit-project-btn">
+        {{ 'common.edit' | translate }}
+      </button>
+      @if (isAdmin()) {
+        <button class="btn btn-danger btn-sm" (click)="showDeleteConfirm.set(true)" data-testid="delete-project-btn">
+          {{ 'common.delete' | translate }}
+        </button>
+      }
+      <div class="export-panel-wrapper">
+        <button class="btn btn-secondary btn-sm" (click)="showExportPanel.set(!showExportPanel())" data-testid="export-btn">
+          ↓ {{ 'export.button' | translate }}
+        </button>
+        @if (showExportPanel()) {
+          <div class="export-panel" data-testid="export-panel">
+            <div class="export-dates">
+              <input type="date" class="export-date-input" [value]="exportStartDate()" (change)="exportStartDate.set($any($event.target).value)" [attr.aria-label]="'export.start_date' | translate" />
+              <input type="date" class="export-date-input" [value]="exportEndDate()" (change)="exportEndDate.set($any($event.target).value)" [attr.aria-label]="'export.end_date' | translate" />
+            </div>
+            <div class="export-actions">
+              <button class="btn btn-primary btn-sm" (click)="exportReport('pdf')" data-testid="export-pdf-btn">{{ 'export.pdf' | translate }}</button>
+              <button class="btn btn-primary btn-sm" (click)="exportReport('excel')" data-testid="export-excel-btn">{{ 'export.excel' | translate }}</button>
+              <button class="btn btn-secondary btn-sm" (click)="showExportPanel.set(false)">{{ 'export.cancel' | translate }}</button>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  </header>
+
+  <!-- Stats bar -->
+  <div class="stats-bar">
+    <div class="stat-item">
+      <span class="stat-value">{{ totalHours().toFixed(1) }}h</span>
+      <span class="stat-label">{{ 'project.total_hours' | translate }}</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-value">{{ project()!.assignedDevelopers.length }}</span>
+      <span class="stat-label">{{ 'project.developers' | translate }}</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-value">{{ entries().length }}</span>
+      <span class="stat-label">{{ 'project.entries_count' | translate }}</span>
+    </div>
+  </div>
+
+  <!-- Assigned developers -->
+  <section class="section" aria-labelledby="devs-title">
+    <h2 class="section-title" id="devs-title">{{ 'project.developers' | translate }}</h2>
+    @if (project()!.assignedDevelopers.length === 0) {
+      <app-empty-state message="developer.no_developers" icon="👥"></app-empty-state>
+    } @else {
+      <div class="dev-grid">
+        @for (dh of devHours(); track dh.developer.id) {
+          <a class="dev-card" [routerLink]="['/calendar', dh.developer.id]" data-testid="dev-card">
+            @if (dh.developer.discordAvatarUrl) {
+              <img class="dev-avatar" [src]="dh.developer.discordAvatarUrl" [alt]="dh.developer.username" />
+            } @else {
+              <div class="dev-avatar-placeholder" [style.background-color]="getDevColor(dh.developer.id)">{{ dh.developer.username.charAt(0).toUpperCase() }}</div>
+            }
+            <div class="dev-info">
+              <span class="dev-name">{{ dh.developer.username }}</span>
+              @if (dh.developer.title) {
+                <span class="dev-title">{{ dh.developer.title }}</span>
+              }
+              <span class="dev-hours">{{ dh.hours.toFixed(1) }}h</span>
+            </div>
+          </a>
+        }
+      </div>
+    }
+  </section>
+
+  <!-- View toggle -->
+  <div class="view-controls">
+    <div class="view-switcher" role="group">
+      <button
+        class="view-btn"
+        [class.active]="viewMode() === 'swimlane'"
+        (click)="viewMode.set('swimlane')"
+        data-testid="swimlane-btn"
+      >{{ 'project.swimlane' | translate }}</button>
+      <button
+        class="view-btn"
+        [class.active]="viewMode() === 'heatmap'"
+        (click)="viewMode.set('heatmap')"
+        data-testid="heatmap-btn"
+      >{{ 'project.heatmap' | translate }}</button>
+    </div>
+  </div>
+
+  <!-- Swimlane view -->
+  @if (viewMode() === 'swimlane') {
+    <div class="swimlane-container" data-testid="swimlane-view">
+      @if (swimlaneData().rows.length === 0) {
+        <app-empty-state message="calendar.no_entries" icon="📊"></app-empty-state>
+      } @else {
+        <div class="swimlane-scroll" data-testid="swimlane-scroll">
+          <!-- Date axis header -->
+          <div class="swimlane-row swimlane-header-row">
+            <div class="swimlane-dev swimlane-dev-header"></div>
+            <div class="swimlane-timeline-header" [style.width.px]="swimlaneData().totalWidth">
+              @for (marker of swimlaneData().dayMarkers; track marker.px) {
+                <span class="timeline-marker" [class.weekend]="marker.isWeekend" [style.left.px]="marker.px">{{ marker.label }}</span>
+              }
+            </div>
+          </div>
+
+          <!-- Developer rows -->
+          @for (row of swimlaneData().rows; track row.developer.id) {
+            <div class="swimlane-row">
+              <div class="swimlane-dev">
+                <div class="swimlane-dev-color" [style.background-color]="getDevColor(row.developer.id)"></div>
+                @if (row.developer.discordAvatarUrl) {
+                  <img class="swimlane-avatar" [src]="row.developer.discordAvatarUrl" [alt]="row.developer.username" />
+                } @else {
+                  <div class="swimlane-avatar-placeholder" [style.background-color]="getDevColor(row.developer.id)">{{ row.developer.username.charAt(0).toUpperCase() }}</div>
+                }
+                <span class="swimlane-name">{{ row.developer.username }}</span>
+              </div>
+              <div class="swimlane-track" [style.width.px]="swimlaneData().totalWidth">
+                @for (block of row.blocks; track block.entry.id) {
+                  <div
+                    class="swimlane-block"
+                    [style.left.px]="block.left"
+                    [style.width.px]="block.width"
+                    [style.border-left-color]="getDevColor(row.developer.id)"
+                    data-testid="swimlane-block"
+                  >
+                    <div class="block-header">
+                      <span class="block-date">{{ block.dateLabel }}</span>
+                      <span class="block-hours">{{ block.hours.toFixed(1) }}h</span>
+                    </div>
+                    <span class="block-label">{{ block.entry.description || block.entry.projectName || '' }}</span>
+                  </div>
+                }
+                @if (row.blocks.length === 0) {
+                  <div class="swimlane-empty">–</div>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  }
+
+  <!-- Heatmap view -->
+  @if (viewMode() === 'heatmap') {
+    <div class="heatmap-period-switcher">
+      <button class="period-btn" [class.active]="heatmapPeriod() === 'day'" (click)="heatmapPeriod.set('day')" data-testid="heatmap-period-day">
+        {{ 'calendar.day' | translate }}
+      </button>
+      <button class="period-btn" [class.active]="heatmapPeriod() === 'week'" (click)="heatmapPeriod.set('week')" data-testid="heatmap-period-week">
+        {{ 'calendar.week' | translate }}
+      </button>
+      <button class="period-btn" [class.active]="heatmapPeriod() === 'month'" (click)="heatmapPeriod.set('month')" data-testid="heatmap-period-month">
+        {{ 'calendar.month' | translate }}
+      </button>
+      <button class="period-btn" [class.active]="heatmapPeriod() === 'trimester'" (click)="heatmapPeriod.set('trimester')" data-testid="heatmap-period-trimester">
+        {{ 'project.trimester' | translate }}
+      </button>
+    </div>
+    <div class="heatmap-container" data-testid="heatmap-view">
+      @if (heatmapData().devs.length === 0) {
+        <app-empty-state message="developer.no_developers" icon="📊"></app-empty-state>
+      } @else {
+        <div class="heatmap-table">
+          <!-- Header: bucket labels -->
+          <div class="heatmap-row heatmap-header">
+            <div class="heatmap-dev-label"></div>
+            @for (bucket of heatmapData().buckets; track bucket.toISOString()) {
+              <div class="heatmap-week-label">{{ formatBucketLabel(bucket) }}</div>
+            }
+          </div>
+
+          <!-- Developer rows -->
+          @for (dev of heatmapData().devs; track dev.id) {
+            <div class="heatmap-row">
+              <div class="heatmap-dev-label">
+                <span class="heatmap-dev-color" [style.background-color]="getDevColor(dev.id)"></span>
+                <span class="heatmap-dev-name">{{ dev.username }}</span>
+              </div>
+              @for (bucket of heatmapData().buckets; track bucket.toISOString()) {
+                @let hours = heatmapData().getHours(dev.id, bucket);
+                <div
+                  class="heatmap-cell"
+                  [style.background-color]="getDevHeatColor(dev.id, getHeatIntensity(hours, heatmapData().maxHours))"
+                  [title]="hours.toFixed(1) + 'h'"
+                  data-testid="heatmap-cell"
+                >
+                </div>
+              }
+            </div>
+          }
+
+          <!-- Total row -->
+          <div class="heatmap-row heatmap-total-row">
+            <div class="heatmap-dev-label">
+              <span class="heatmap-dev-name total-label">{{ 'common.total' | translate }}</span>
+            </div>
+            @for (bucket of heatmapData().buckets; track bucket.toISOString()) {
+              @let total = heatmapData().getTotalHours(bucket);
+              <div
+                class="heatmap-cell heatmap-total-cell"
+                [title]="total.toFixed(1) + 'h'"
+                data-testid="heatmap-total-cell"
+              >
+                <span class="total-hours">{{ total.toFixed(1) }}h</span>
+              </div>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  }
+
+  }
+
+  <!-- Edit Modal -->
+  <app-modal
+    [isOpen]="showEditModal()"
+    [title]="'project.edit' | translate"
+    (closed)="showEditModal.set(false)"
+  >
+    <form class="modal-form" (ngSubmit)="saveEdit()">
+      <div class="form-group">
+        <label class="form-label" for="edit-name">{{ 'project.name' | translate }}</label>
+        <input
+          id="edit-name"
+          type="text"
+          class="form-input"
+          [value]="editForm().name"
+          (input)="updateEditField('name', $any($event.target).value)"
+          required
+          data-testid="edit-project-name-input"
+        />
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="edit-type">{{ 'project.type' | translate }}</label>
+        <select
+          id="edit-type"
+          class="form-input"
+          [value]="editForm().type"
+          (change)="updateEditField('type', $any($event.target).value)"
+          data-testid="edit-project-type-select"
+        >
+          <option value="INTERNAL">{{ 'project.internal' | translate }}</option>
+          <option value="EXTERNAL">{{ 'project.external' | translate }}</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="edit-repo">{{ 'project.repo_url' | translate }}</label>
+        <input
+          id="edit-repo"
+          type="url"
+          class="form-input"
+          [value]="editForm().repoUrl"
+          (input)="updateEditField('repoUrl', $any($event.target).value)"
+          data-testid="edit-project-repo-input"
+        />
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="edit-client">{{ 'project.client' | translate }}</label>
+        <select
+          id="edit-client"
+          class="form-input"
+          (change)="updateEditField('clientId', $any($event.target).value ? +$any($event.target).value : null)"
+          data-testid="edit-project-client-select"
+        >
+          <option value="">{{ 'project.no_client' | translate }}</option>
+          @for (client of clients(); track client.id) {
+            <option [value]="client.id" [selected]="editForm().clientId === client.id">{{ client.name }}</option>
+          }
+        </select>
+      </div>
+      @if (editError()) {
+        <p class="form-error">{{ editError() | translate }}</p>
+      }
+      <div class="form-actions">
+        <button type="button" class="btn btn-secondary" (click)="showEditModal.set(false)" data-testid="edit-cancel-btn">
+          {{ 'common.cancel' | translate }}
+        </button>
+        <button type="submit" class="btn btn-primary" [disabled]="editLoading()" data-testid="edit-save-btn">
+          @if (editLoading()) { {{ 'common.loading' | translate }} }
+          @else { {{ 'common.save' | translate }} }
+        </button>
+      </div>
+    </form>
+  </app-modal>
+
+  <!-- Delete Confirm Modal -->
+  <app-modal
+    [isOpen]="showDeleteConfirm()"
+    [title]="'project.delete' | translate"
+    (closed)="showDeleteConfirm.set(false)"
+  >
+    <p class="confirm-text">{{ 'confirm.delete_project' | translate }}</p>
+    <p class="confirm-sub">{{ 'confirm.irreversible' | translate }}</p>
+    <div class="form-actions">
+      <button class="btn btn-secondary" (click)="showDeleteConfirm.set(false)" data-testid="delete-cancel-btn">
+        {{ 'common.cancel' | translate }}
+      </button>
+      <button class="btn btn-danger" (click)="deleteProject()" data-testid="delete-confirm-btn">
+        {{ 'common.delete' | translate }}
+      </button>
+    </div>
+  </app-modal>
+</main>

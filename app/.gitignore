@@ -1,0 +1,16 @@
+# Gradle
+backend/.gradle/
+backend/build/
+
+# IDE
+.metals/
+.vscode/
+.idea/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Claude Code
+.claude/

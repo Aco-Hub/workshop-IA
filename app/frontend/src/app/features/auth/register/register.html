@@ -1,0 +1,109 @@
+<main class="auth-page" role="main">
+  <div class="auth-card">
+    <div class="auth-header">
+      <div class="auth-logo">TS</div>
+      <h1 class="auth-title">{{ 'auth.register_title' | translate }}</h1>
+    </div>
+
+    <form class="auth-form" (ngSubmit)="onSubmit()" novalidate>
+      @if (!inviteToken()) {
+        <div class="form-group">
+          <label class="form-label" for="invite-token">{{ 'auth.invite_token' | translate }}</label>
+          <input
+            id="invite-token"
+            type="text"
+            class="form-input"
+            [value]="inviteToken()"
+            (input)="inviteToken.set($any($event.target).value)"
+            required
+            data-testid="register-token-input"
+          />
+        </div>
+      }
+
+      <div class="form-group">
+        <label class="form-label" for="username">{{ 'auth.username' | translate }}</label>
+        <input
+          id="username"
+          type="text"
+          class="form-input"
+          [value]="username()"
+          (input)="username.set($any($event.target).value)"
+          autocomplete="username"
+          required
+          data-testid="register-username-input"
+        />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="password">{{ 'auth.password' | translate }}</label>
+        <input
+          id="password"
+          type="password"
+          class="form-input"
+          [value]="password()"
+          (input)="password.set($any($event.target).value)"
+          autocomplete="new-password"
+          required
+          data-testid="register-password-input"
+        />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="title">
+          {{ 'auth.title' | translate }}
+          <span class="form-optional">({{ 'auth.optional' | translate }})</span>
+        </label>
+        <input
+          id="title"
+          type="text"
+          class="form-input"
+          [value]="title()"
+          (input)="title.set($any($event.target).value)"
+          placeholder="e.g. Frontend Developer"
+          data-testid="register-title-input"
+        />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="discord">
+          {{ 'auth.discord_username' | translate }}
+          <span class="form-optional">({{ 'auth.optional' | translate }})</span>
+        </label>
+        <input
+          id="discord"
+          type="text"
+          class="form-input"
+          [value]="discordLink()"
+          (input)="discordLink.set($any($event.target).value)"
+          placeholder="e.g. albinvernhes"
+          data-testid="register-discord-input"
+        />
+      </div>
+
+      @if (error()) {
+        <div class="form-error" role="alert" data-testid="register-error">
+          {{ error() | translate }}
+        </div>
+      }
+
+      <button
+        type="submit"
+        class="btn btn-primary btn-full"
+        [disabled]="loading()"
+        data-testid="register-submit-btn"
+      >
+        @if (loading()) {
+          {{ 'common.loading' | translate }}
+        } @else {
+          {{ 'auth.sign_up' | translate }}
+        }
+      </button>
+    </form>
+
+    <div class="auth-footer">
+      {{ 'auth.already_have_account' | translate }}
+      <a routerLink="/login" data-testid="go-to-login-link">{{ 'auth.login' | translate }}</a>
+    </div>
+  </div>
+</main>

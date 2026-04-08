@@ -1,0 +1,624 @@
+<main class="calendar-page" role="main">
+  @if (loading()) {
+    <app-loading-spinner></app-loading-spinner>
+  } @else {
+
+  <!-- Profile Section -->
+  @if (developer()) {
+    <section class="profile-section" aria-labelledby="profile-name">
+      <div class="profile-header">
+        <div class="profile-avatar-wrapper">
+          @if (developer()!.discordAvatarUrl) {
+            <img class="profile-avatar" [src]="developer()!.discordAvatarUrl" [alt]="developer()!.username" />
+          } @else {
+            <div class="profile-avatar-placeholder" [style.background-color]="getDevColor(developer()!.id)">{{ developer()!.username.charAt(0).toUpperCase() }}</div>
+          }
+        </div>
+
+        <div class="profile-info">
+          @if (editMode()) {
+            <form class="profile-edit-form" (ngSubmit)="saveProfile()">
+              <div class="edit-row">
+                <input
+                  type="text"
+                  class="profile-edit-input"
+                  [value]="editUsername()"
+                  (input)="editUsername.set($any($event.target).value)"
+                  [placeholder]="'auth.username' | translate"
+                  data-testid="edit-username-input"
+                />
+                <input
+                  type="text"
+                  class="profile-edit-input"
+                  [value]="editTitle()"
+                  (input)="editTitle.set($any($event.target).value)"
+                  [placeholder]="'auth.title' | translate"
+                  data-testid="edit-title-input"
+                />
+              </div>
+              <input
+                type="text"
+                class="profile-edit-input profile-edit-input--full"
+                [value]="editDiscordLink()"
+                (input)="editDiscordLink.set($any($event.target).value)"
+                [placeholder]="'auth.discord_username' | translate"
+                data-testid="edit-discord-input"
+              />
+              @if (profileError()) {
+                <p class="form-error">{{ profileError() | translate }}</p>
+              }
+              <div class="edit-actions">
+                <button type="submit" class="btn btn-primary btn-sm" [disabled]="profileLoading()" data-testid="save-profile-btn">
+                  @if (profileLoading()) { {{ 'common.loading' | translate }} }
+                  @else { {{ 'profile.save' | translate }} }
+                </button>
+                <button type="button" class="btn btn-secondary btn-sm" (click)="cancelEdit()" data-testid="cancel-edit-btn">
+                  {{ 'profile.cancel' | translate }}
+                </button>
+              </div>
+            </form>
+          } @else {
+            <h1 id="profile-name" class="profile-name">{{ developer()!.username }}</h1>
+            @if (developer()!.title) {
+              <p class="profile-title">{{ developer()!.title }}</p>
+            }
+            <div class="profile-badges">
+              <span class="role-badge" [class.admin]="developer()!.role === 'ADMIN'">
+                {{ developer()!.role === 'ADMIN' ? ('profile.admin' | translate) : ('profile.standard' | translate) }}
+              </span>
+              @if (developer()!.discordLink) {
+                <span class="discord-badge" data-testid="discord-link">
+                  <svg class="discord-icon" viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M20.317 4.37a19.79 19.79 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.74 19.74 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.08.08 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.227-1.994a.076.076 0 0 0-.041-.106 13.1 13.1 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.3 12.3 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.84 19.84 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.06.06 0 0 0-.031-.03z"/></svg>
+                  {{ developer()!.discordLink }}
+                </span>
+              }
+            </div>
+          }
+        </div>
+
+        @if (!editMode()) {
+          <div class="profile-actions">
+            @if (isOwnProfile()) {
+              <button class="btn btn-secondary btn-sm" (click)="startEdit()" data-testid="edit-profile-btn">
+                {{ 'profile.edit' | translate }}
+              </button>
+            }
+            <div class="export-panel-wrapper">
+              <button class="btn btn-secondary btn-sm" (click)="showExportPanel.set(!showExportPanel())" data-testid="export-btn">
+                ↓ {{ 'export.button' | translate }}
+              </button>
+              @if (showExportPanel()) {
+                <div class="export-panel" data-testid="export-panel">
+                  <div class="export-dates">
+                    <input type="date" class="export-date-input" [value]="exportStartDate()" (change)="exportStartDate.set($any($event.target).value)" [attr.aria-label]="'export.start_date' | translate" />
+                    <input type="date" class="export-date-input" [value]="exportEndDate()" (change)="exportEndDate.set($any($event.target).value)" [attr.aria-label]="'export.end_date' | translate" />
+                  </div>
+                  <div class="export-actions">
+                    <button class="btn btn-primary btn-sm" (click)="exportReport('pdf')" data-testid="export-pdf-btn">{{ 'export.pdf' | translate }}</button>
+                    <button class="btn btn-primary btn-sm" (click)="exportReport('excel')" data-testid="export-excel-btn">{{ 'export.excel' | translate }}</button>
+                    <button class="btn btn-secondary btn-sm" (click)="showExportPanel.set(false)">{{ 'export.cancel' | translate }}</button>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        }
+      </div>
+
+      <div class="profile-stats">
+        <div class="stat-item">
+          <span class="stat-value">{{ totalHours().toFixed(1) }}h</span>
+          <span class="stat-label">{{ 'calendar.total_hours' | translate }}</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-value">{{ entries().length }}</span>
+          <span class="stat-label">{{ 'time_entry.create' | translate }}</span>
+        </div>
+      </div>
+    </section>
+  }
+
+  <!-- Calendar Controls -->
+  <div class="calendar-controls">
+    <div class="controls-left">
+      <div class="view-switcher" role="group" [attr.aria-label]="'calendar.title' | translate">
+        <button
+          class="view-btn"
+          [class.active]="view() === 'day'"
+          (click)="setView('day')"
+          data-testid="view-day-btn"
+        >{{ 'calendar.day' | translate }}</button>
+        <button
+          class="view-btn"
+          [class.active]="view() === 'week'"
+          (click)="setView('week')"
+          data-testid="view-week-btn"
+        >{{ 'calendar.week' | translate }}</button>
+        <button
+          class="view-btn"
+          [class.active]="view() === 'month'"
+          (click)="setView('month')"
+          data-testid="view-month-btn"
+        >{{ 'calendar.month' | translate }}</button>
+      </div>
+
+      <div class="nav-controls">
+        <button class="nav-btn" (click)="previous()" [attr.aria-label]="'calendar.previous' | translate" data-testid="calendar-prev-btn">‹</button>
+        <button class="today-btn" (click)="goToday()" data-testid="calendar-today-btn">{{ 'calendar.today' | translate }}</button>
+        <button class="nav-btn" (click)="next()" [attr.aria-label]="'calendar.next' | translate" data-testid="calendar-next-btn">›</button>
+      </div>
+
+      <h2 class="period-label">{{ currentPeriodLabel() }}</h2>
+    </div>
+
+    <div class="controls-right">
+      <select
+        class="filter-select"
+        (change)="filterClientId.set($any($event.target).value ? +$any($event.target).value : null); loadEntries()"
+        data-testid="filter-client-select"
+      >
+        <option value="">{{ 'calendar.all_clients' | translate }}</option>
+        @for (client of clients(); track client.id) {
+          <option [value]="client.id">{{ client.name }}</option>
+        }
+      </select>
+
+      <select
+        class="filter-select"
+        (change)="filterProjectId.set($any($event.target).value ? +$any($event.target).value : null); loadEntries()"
+        data-testid="filter-project-select"
+      >
+        <option value="">{{ 'calendar.all_projects' | translate }}</option>
+        @for (project of projects(); track project.id) {
+          <option [value]="project.id">{{ project.name }}</option>
+        }
+      </select>
+    </div>
+  </div>
+
+  <!-- Calendar Views -->
+  <div class="calendar-wrapper">
+
+    <!-- WEEK VIEW -->
+    @if (view() === 'week') {
+      <div class="week-view" data-testid="week-view">
+        <div class="week-columns">
+          @for (day of weekDays(); track day.date.toISOString(); let i = $index) {
+            <div
+              class="week-day-col"
+              [class.today]="day.isToday"
+              [class.weekend]="day.isWeekend"
+              [class.holiday]="day.holiday !== null"
+              [attr.data-paste-date]="formatDate(day.date)"
+              tabindex="0"
+            >
+              <div class="week-day-header">
+                <span class="week-day-name">{{ formatDayLabel(day.date) }}</span>
+                @if (day.holiday) {
+                  <span class="holiday-indicator" [title]="day.holiday.name">🏖 {{ day.holiday.name }}</span>
+                }
+                @if (day.entries.length > 0) {
+                  <span class="week-day-hours">{{ getDayTotalHours(day.entries).toFixed(1) }}h</span>
+                }
+                @if (copiedEntry() && isOwnProfile()) {
+                  <button
+                    class="paste-btn"
+                    (click)="pasteEntry(day.date)"
+                    [attr.aria-label]="'time_entry.paste' | translate"
+                    data-testid="paste-btn"
+                  >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/></svg>
+                  </button>
+                }
+              </div>
+              <div
+                class="week-day-entries"
+                cdkDropList
+                [id]="'week-drop-' + i"
+                [cdkDropListData]="day"
+                [cdkDropListConnectedTo]="weekDropListIds()"
+                (cdkDropListDropped)="onEntryDrop($event, day.date)"
+                [cdkDropListDisabled]="!isOwnProfile()"
+              >
+                @for (entry of day.entries; track entry.id) {
+                  <div
+                    class="entry-card"
+                    [class.readonly]="!isOwnProfile()"
+                    [class.copied]="copiedEntry()?.id === entry.id"
+                    [style.border-left-color]="getEntryColor(entry)"
+                    (click)="openEditEntryModal(entry, $event)"
+                    [attr.data-testid]="'entry-' + entry.id"
+                    [attr.data-entry-id]="entry.id"
+                    [attr.role]="isOwnProfile() ? 'button' : null"
+                    [attr.tabindex]="isOwnProfile() ? 0 : null"
+                    (keydown.enter)="openEditEntryModal(entry, $event)"
+                    cdkDrag
+                    [cdkDragData]="entry"
+                    [cdkDragDisabled]="!isOwnProfile()"
+                    (cdkDragStarted)="onEntryDragStarted()"
+                  >
+                    <div class="entry-card-header">
+                      <span class="entry-card-project" [style.color]="getEntryColor(entry)">{{ entry.projectName || (entry.type === 'LEAVE' ? ('time_entry.leave' | translate) : '') }}</span>
+                      @if (entry.recurrenceGroupId) {
+                        <span class="recurrence-badge" [attr.aria-label]="'time_entry.recurring' | translate">
+                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+                        </span>
+                      }
+                      <span class="entry-card-hours">{{ formatEntryDuration(entry) }}</span>
+                    </div>
+                    @if (entry.description) {
+                      <span class="entry-card-desc">{{ entry.description }}</span>
+                    }
+                    @if (isOwnProfile()) {
+                      <button
+                        class="entry-copy-btn"
+                        (click)="copyEntry(entry, $event)"
+                        [attr.aria-label]="'time_entry.copy' | translate"
+                        data-testid="copy-entry-btn"
+                      >
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                      </button>
+                    }
+                  </div>
+                }
+                @if (isOwnProfile()) {
+                  <button class="add-entry-btn" (click)="openCreateEntryForDay(day.date)" [attr.data-testid]="'add-entry-' + day.date.toISOString().split('T')[0]">+</button>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    }
+
+    <!-- DAY VIEW -->
+    @if (view() === 'day') {
+      <div class="day-view" data-testid="day-view">
+        <div class="day-view-header-bar">
+          <div
+            class="day-header-full"
+            [class.today]="dayView().isToday"
+            [class.weekend]="dayView().isWeekend"
+            [class.holiday]="dayView().holiday !== null"
+          >
+            <span class="day-header-name">{{ formatDayLabel(dayView().date) }}</span>
+            @if (dayView().holiday) {
+              <span class="holiday-indicator" [title]="dayView().holiday!.name">🏖 {{ dayView().holiday!.name }}</span>
+            }
+            @if (dayView().entries.length > 0) {
+              <span class="day-total-badge">{{ getDayTotalHours(dayView().entries).toFixed(1) }}h</span>
+            }
+          </div>
+          <div class="day-header-actions">
+            @if (copiedEntry() && isOwnProfile()) {
+              <button
+                class="btn btn-secondary btn-sm"
+                (click)="pasteEntry(dayView().date)"
+                data-testid="paste-day-btn"
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/></svg>
+                {{ 'time_entry.paste' | translate }}
+              </button>
+            }
+            @if (isOwnProfile()) {
+              <button class="btn btn-primary btn-sm" (click)="openCreateEntryForDay(dayView().date)" data-testid="add-entry-day-btn">+ {{ 'time_entry.create' | translate }}</button>
+            }
+          </div>
+        </div>
+        <div class="day-entries-list">
+          @if (dayView().entries.length === 0) {
+            <div class="day-empty">{{ 'calendar.no_entries' | translate }}</div>
+          }
+          @for (entry of dayView().entries; track entry.id) {
+            <div
+              class="entry-card entry-card--large"
+              [class.readonly]="!isOwnProfile()"
+              [class.copied]="copiedEntry()?.id === entry.id"
+              [style.border-left-color]="getEntryColor(entry)"
+              (click)="openEditEntryModal(entry, $event)"
+              [attr.data-testid]="'day-entry-' + entry.id"
+              [attr.data-entry-id]="entry.id"
+              [attr.role]="isOwnProfile() ? 'button' : null"
+              [attr.tabindex]="isOwnProfile() ? 0 : null"
+              (keydown.enter)="openEditEntryModal(entry, $event)"
+            >
+              <div class="entry-card-header">
+                <span class="entry-card-project" [style.color]="getEntryColor(entry)">{{ entry.projectName || (entry.type === 'LEAVE' ? ('time_entry.leave' | translate) : '') }}</span>
+                <span class="entry-card-hours">{{ formatEntryDuration(entry) }}</span>
+              </div>
+              @if (entry.description) {
+                <span class="entry-card-desc">{{ entry.description }}</span>
+              }
+              @if (entry.type === 'LEAVE') {
+                <span class="entry-type-badge leave">{{ 'time_entry.leave' | translate }}</span>
+              }
+              @if (isOwnProfile()) {
+                <button
+                  class="entry-copy-btn"
+                  (click)="copyEntry(entry, $event)"
+                  [attr.aria-label]="'time_entry.copy' | translate"
+                  data-testid="copy-entry-btn"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                </button>
+              }
+            </div>
+          }
+        </div>
+      </div>
+    }
+
+    <!-- MONTH VIEW -->
+    @if (view() === 'month') {
+      <div class="month-view" data-testid="month-view">
+        <!-- Day names header -->
+        <div class="month-header">
+          @for (d of [0,1,2,3,4,5,6]; track d) {
+            <div class="month-day-name">{{ 'day.' + d | translate }}</div>
+          }
+        </div>
+
+        <!-- Weeks -->
+        @for (week of getMonthWeekRows(); track week[0].date.toISOString(); let wi = $index) {
+          <div class="month-week">
+            @for (day of week; track day.date.toISOString(); let di = $index) {
+              <div
+                class="month-cell"
+                [class.today]="day.isToday"
+                [class.weekend]="day.isWeekend"
+                [class.other-month]="!day.isCurrentMonth"
+                [class.holiday]="day.holiday !== null"
+                (click)="currentDate.set(day.date); setView('day')"
+                data-testid="month-cell"
+                role="button"
+                tabindex="0"
+                (keydown.enter)="currentDate.set(day.date); setView('day')"
+                cdkDropList
+                [id]="'month-drop-' + (wi * 7 + di)"
+                [cdkDropListData]="day"
+                [cdkDropListConnectedTo]="monthDropListIds()"
+                (cdkDropListDropped)="onEntryDrop($event, day.date)"
+                [cdkDropListDisabled]="!isOwnProfile()"
+              >
+                <div class="month-cell-header">
+                  <span class="month-day-num" [class.today-circle]="day.isToday">{{ day.date.getDate() }}</span>
+                  @if (day.holiday) {
+                    <span class="month-holiday-label" [title]="day.holiday.name">{{ day.holiday.name }}</span>
+                  }
+                  @if (copiedEntry() && isOwnProfile()) {
+                    <button
+                      class="paste-btn paste-btn--month"
+                      (click)="pasteEntry(day.date); $event.stopPropagation()"
+                      [attr.aria-label]="'time_entry.paste' | translate"
+                      data-testid="paste-month-btn"
+                    >
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/></svg>
+                    </button>
+                  }
+                </div>
+                @if (day.entries.length > 0) {
+                  <div class="month-entries">
+                    @for (entry of day.entries.slice(0, 3); track entry.id) {
+                      <div
+                        class="month-entry-pill"
+                        [class.readonly]="!isOwnProfile()"
+                        [style.background-color]="getEntryColor(entry)"
+                        (click)="openEditEntryModal(entry, $event)"
+                        data-testid="month-entry-pill"
+                        cdkDrag
+                        [cdkDragData]="entry"
+                        [cdkDragDisabled]="!isOwnProfile()"
+                      >
+                        {{ entry.projectName || (entry.type === 'LEAVE' ? ('time_entry.leave' | translate) : '') }}
+                      </div>
+                    }
+                    @if (day.entries.length > 3) {
+                      <div class="month-entry-more">+{{ day.entries.length - 3 }}</div>
+                    }
+                  </div>
+                  <div class="month-hours">{{ formatMonthDayEntries(day.entries) }}</div>
+                }
+              </div>
+            }
+          </div>
+        }
+      </div>
+    }
+
+  </div>
+
+  }
+
+  <!-- Entry Create/Edit Modal -->
+  <app-modal
+    [isOpen]="showEntryModal()"
+    [title]="(editingEntry() ? 'time_entry.edit' : 'time_entry.create') | translate"
+    (closed)="showEntryModal.set(false)"
+  >
+    <form class="modal-form" (ngSubmit)="saveEntry()">
+      <div class="form-group">
+        <label class="form-label" for="entry-project">{{ 'time_entry.project' | translate }}</label>
+        <select
+          id="entry-project"
+          class="form-input"
+          [value]="entryForm().projectId ?? ''"
+          (change)="updateEntryFormField('projectId', $any($event.target).value ? +$any($event.target).value : null)"
+          data-testid="entry-project-select"
+        >
+          <option value="">{{ 'time_entry.no_project' | translate }}</option>
+          @for (project of assignedProjects(); track project.id) {
+            <option [value]="project.id">{{ project.name }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="entry-type">{{ 'time_entry.type' | translate }}</label>
+        <select
+          id="entry-type"
+          class="form-input"
+          [value]="entryForm().type"
+          (change)="updateEntryFormField('type', $any($event.target).value)"
+          data-testid="entry-type-select"
+        >
+          <option value="WORK">{{ 'time_entry.work' | translate }}</option>
+          <option value="LEAVE">{{ 'time_entry.leave' | translate }}</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="entry-desc">{{ 'time_entry.description' | translate }}</label>
+        <input
+          id="entry-desc"
+          type="text"
+          class="form-input"
+          [value]="entryForm().description"
+          (input)="updateEntryFormField('description', $any($event.target).value)"
+          data-testid="entry-description-input"
+        />
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" for="entry-date">{{ 'time_entry.date' | translate }}</label>
+          <input
+            id="entry-date"
+            type="date"
+            class="form-input"
+            [value]="entryForm().date"
+            (change)="updateEntryFormField('date', $any($event.target).value)"
+            required
+            data-testid="entry-date-input"
+          />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="entry-hours">{{ 'time_entry.hours' | translate }}</label>
+          <select
+            id="entry-hours"
+            class="form-input"
+            [value]="entryForm().hours"
+            (change)="updateEntryFormField('hours', +$any($event.target).value)"
+            data-testid="entry-hours-select"
+          >
+            @for (h of hoursOptions; track h) {
+              <option [value]="h" [selected]="entryForm().hours === h">{{ h }}h</option>
+            }
+          </select>
+        </div>
+      </div>
+
+      @if (!editingEntry()) {
+        <div class="form-group">
+          <label class="recurrence-toggle">
+            <input
+              type="checkbox"
+              [checked]="entryForm().recurring"
+              (change)="updateEntryFormField('recurring', $any($event.target).checked)"
+              data-testid="entry-recurring-toggle"
+            />
+            <span class="recurrence-toggle-label">{{ 'time_entry.recurring' | translate }}</span>
+          </label>
+        </div>
+
+        @if (entryForm().recurring) {
+          <div class="recurrence-options">
+            <div class="form-group">
+              <label class="form-label" for="entry-frequency">{{ 'time_entry.frequency' | translate }}</label>
+              <select
+                id="entry-frequency"
+                class="form-input"
+                [value]="entryForm().frequency"
+                (change)="updateEntryFormField('frequency', $any($event.target).value)"
+                data-testid="entry-frequency-select"
+              >
+                <option value="DAILY">{{ 'time_entry.daily' | translate }}</option>
+                <option value="WEEKLY">{{ 'time_entry.weekly' | translate }}</option>
+                <option value="MONTHLY">{{ 'time_entry.monthly' | translate }}</option>
+              </select>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label" for="entry-end-date">{{ 'time_entry.end_date' | translate }}</label>
+                <input
+                  id="entry-end-date"
+                  type="date"
+                  class="form-input"
+                  [value]="entryForm().endDate"
+                  (change)="updateEntryFormField('endDate', $any($event.target).value)"
+                  data-testid="entry-end-date-input"
+                />
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="entry-count">{{ 'time_entry.occurrences' | translate }}</label>
+                <input
+                  id="entry-count"
+                  type="number"
+                  class="form-input"
+                  min="1"
+                  max="365"
+                  [value]="entryForm().count ?? ''"
+                  (input)="updateEntryFormField('count', $any($event.target).value ? +$any($event.target).value : null)"
+                  data-testid="entry-count-input"
+                />
+              </div>
+            </div>
+          </div>
+        }
+      }
+
+      @if (entryError()) {
+        <p class="form-error">{{ entryError() | translate }}</p>
+      }
+
+      <div class="form-actions">
+        @if (editingEntry()) {
+          <button
+            type="button"
+            class="btn btn-danger btn-sm"
+            (click)="confirmDeleteEntry(editingEntry()!, $event)"
+            data-testid="delete-entry-btn"
+          >{{ 'time_entry.delete' | translate }}</button>
+        }
+        <button type="button" class="btn btn-secondary" (click)="showEntryModal.set(false)" data-testid="entry-cancel-btn">
+          {{ 'common.cancel' | translate }}
+        </button>
+        <button type="submit" class="btn btn-primary" [disabled]="entryLoading()" data-testid="entry-save-btn">
+          @if (entryLoading()) { {{ 'common.loading' | translate }} }
+          @else { {{ 'common.save' | translate }} }
+        </button>
+      </div>
+    </form>
+  </app-modal>
+
+  <!-- Copied toast -->
+  @if (showCopiedToast()) {
+    <div class="copied-toast" role="status" aria-live="polite" data-testid="copied-toast">{{ 'time_entry.copied' | translate }}</div>
+  }
+
+  <!-- Delete Confirm Modal -->
+  <app-modal
+    [isOpen]="showDeleteConfirm()"
+    [title]="'time_entry.confirm_delete' | translate"
+    (closed)="showDeleteConfirm.set(false)"
+  >
+    <p class="confirm-text">{{ 'confirm.delete_entry' | translate }}</p>
+    <p class="confirm-sub">{{ 'confirm.irreversible' | translate }}</p>
+    <div class="form-actions">
+      <button class="btn btn-secondary" (click)="showDeleteConfirm.set(false)" data-testid="delete-cancel-btn">
+        {{ 'common.cancel' | translate }}
+      </button>
+      @if (editingEntry()?.recurrenceGroupId) {
+        <button class="btn btn-danger" (click)="deleteEntry()" data-testid="delete-single-btn">
+          {{ 'time_entry.delete_single' | translate }}
+        </button>
+        <button class="btn btn-danger" (click)="deleteRecurrenceGroup()" data-testid="delete-series-btn">
+          {{ 'time_entry.delete_series' | translate }}
+        </button>
+      } @else {
+        <button class="btn btn-danger" (click)="deleteEntry()" data-testid="delete-confirm-btn">
+          {{ 'common.delete' | translate }}
+        </button>
+      }
+    </div>
+  </app-modal>
+</main>

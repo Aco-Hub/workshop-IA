@@ -1,0 +1,11 @@
+<div class="app-layout">
+  @if (showSidebar) {
+    <app-sidebar></app-sidebar>
+  }
+  <div
+    class="app-content"
+    [class.app-content--full]="!showSidebar"
+  >
+    <router-outlet></router-outlet>
+  </div>
+</div>
