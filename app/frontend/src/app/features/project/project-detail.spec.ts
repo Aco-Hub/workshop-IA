@@ -179,7 +179,7 @@ describe('ProjectDetailComponent - Join, Leave, Entries', () => {
  * than they actually have.
  *
  * Fix: the profile KPIs (totalHours, devHours) must query ALL entries for
- * the project independently of the swimlane/heatmap zoom range.
+ * the project independently of the swimlane zoom range.
  */
 describe('US-001: Project view should show accurate total dev times', () => {
   let httpMock: HttpTestingController;

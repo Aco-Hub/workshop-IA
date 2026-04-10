@@ -1,0 +1,114 @@
+@if (isShapeTool()) {
+  <nav class="bottom-bar" role="toolbar" aria-label="Shape options">
+    <button
+      class="fill-btn"
+      [class.active]="fillMode() === 'solid'"
+      (click)="setFillMode('solid')"
+      data-testid="fill-solid"
+    >
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+        <rect x="4" y="4" width="16" height="16" rx="2"/>
+      </svg>
+    </button>
+    <button
+      class="fill-btn"
+      [class.active]="fillMode() === 'stroke'"
+      (click)="setFillMode('stroke')"
+      data-testid="fill-stroke"
+    >
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="4" y="4" width="16" height="16" rx="2"/>
+      </svg>
+    </button>
+    <button
+      class="fill-btn"
+      [class.active]="fillMode() === 'pattern'"
+      (click)="setFillMode('pattern')"
+      data-testid="fill-pattern"
+    >
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="4" y="4" width="16" height="16" rx="2"/>
+        <line x1="7" y1="7" x2="17" y2="17" stroke-width="1.5"/>
+        <line x1="7" y1="12" x2="12" y2="17" stroke-width="1.5"/>
+        <line x1="12" y1="7" x2="17" y2="12" stroke-width="1.5"/>
+      </svg>
+    </button>
+    <button
+      class="fill-btn"
+      [class.active]="fillMode() === 'gradient'"
+      (click)="setFillMode('gradient')"
+      data-testid="fill-gradient"
+    >
+      <svg width="20" height="20" viewBox="0 0 24 24">
+        <defs>
+          <linearGradient id="gradFill" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#fff"/>
+            <stop offset="100%" stop-color="#666"/>
+          </linearGradient>
+        </defs>
+        <rect x="4" y="4" width="16" height="16" rx="2" fill="url(#gradFill)" stroke="currentColor" stroke-width="1"/>
+      </svg>
+    </button>
+
+    <span class="text-divider"></span>
+
+    <label class="stroke-label">
+      <input
+        type="range"
+        class="stroke-slider"
+        min="1"
+        max="12"
+        [value]="strokeWidth()"
+        (input)="setStrokeWidth($event)"
+        data-testid="stroke-width-slider"
+      />
+      <span class="stroke-value">{{ strokeWidth() }}px</span>
+    </label>
+  </nav>
+}
+
+@if (isPenTool()) {
+  <nav class="bottom-bar" role="toolbar" aria-label="Pen options">
+    <label class="stroke-label">
+      <input
+        type="range"
+        class="stroke-slider"
+        min="1"
+        max="12"
+        [value]="strokeWidth()"
+        (input)="setStrokeWidth($event)"
+        data-testid="pen-stroke-width-slider"
+      />
+      <span class="stroke-value">{{ strokeWidth() }}px</span>
+    </label>
+  </nav>
+}
+
+@if (isTextTool()) {
+  <nav class="bottom-bar text-bar" role="toolbar" aria-label="Text formatting">
+    <select class="font-select" [value]="fontFamily()" (change)="setFontFamily($event)" data-testid="font-family-select">
+      <option value="Inter">Inter</option>
+      <option value="Arial">Arial</option>
+      <option value="Georgia">Georgia</option>
+      <option value="monospace">Mono</option>
+    </select>
+
+    <select class="size-select" [value]="fontSize()" (change)="setFontSize($event)" data-testid="font-size-select">
+      <option value="12">12</option>
+      <option value="14">14</option>
+      <option value="16">16</option>
+      <option value="18">18</option>
+      <option value="24">24</option>
+      <option value="32">32</option>
+    </select>
+
+    <span class="text-divider"></span>
+
+    <button class="text-btn" [class.active]="bold()" (click)="toggleBold()" data-testid="text-bold">
+      <strong>B</strong>
+    </button>
+    <button class="text-btn" [class.active]="italic()" (click)="toggleItalic()" data-testid="text-italic">
+      <em>I</em>
+    </button>
+  </nav>
+}

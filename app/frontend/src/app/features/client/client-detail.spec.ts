@@ -184,38 +184,6 @@ describe('US-003: Developer count must be consistent across all sections', () =>
 });
 
 /**
- * US-004: Heatmap total row must not show misleading rounded values
- *
- * As a user checking the heatmap totals,
- * I want totals to display with one decimal place (e.g., "1.5h"),
- * so they don't appear inconsistent with the stats bar total.
- */
-describe('US-004: Heatmap total must use consistent precision', () => {
-  let httpMock: HttpTestingController;
-
-  afterEach(() => { httpMock.verify(); TestBed.resetTestingModule(); });
-
-  it('getTotalHoursForBucket should return precise value, not rounded', () => {
-    const { fixture, comp, httpMock: hm } = createComponent();
-    httpMock = hm;
-
-    comp.client.set(mockClient);
-    comp.projects.set([mockProject]);
-    comp.entries.set([
-      mkEntry(1, 1, 'Albin', '2026-03-20T09:00:00', '2026-03-20T10:30:00'),
-    ]);
-
-    const weekStart = new Date('2026-03-16T00:00:00');
-    comp.heatmapPeriod.set('week');
-    const hours = comp.getTotalHoursForBucket(weekStart);
-    expect(hours).toBeCloseTo(1.5);
-    // The template should render this as "1.5h" not "2h"
-    expect(hours.toFixed(1)).toBe('1.5');
-    fixture.destroy();
-  });
-});
-
-/**
  * US-005: Swimlane must display actual time entry blocks, not placeholders
  *
  * As a user switching to the swimlane view on a client page,
@@ -277,68 +245,6 @@ describe('US-005: Swimlane view must show positioned entry blocks', () => {
 });
 
 /**
- * US-006: Heatmap per-dev max should be per-dev, not total across all devs
- *
- * As a user viewing the heatmap,
- * I want each developer's heatmap cells to use full color intensity
- * based on their own max, not diluted by the total of all devs.
- */
-describe('US-006: Heatmap intensity should be based on per-dev maximum', () => {
-  let httpMock: HttpTestingController;
-
-  afterEach(() => { httpMock.verify(); TestBed.resetTestingModule(); });
-
-  it('heatmapMax should reflect the highest single-dev bucket, not total', () => {
-    const { fixture, comp, httpMock: hm } = createComponent();
-    httpMock = hm;
-
-    comp.client.set(mockClient);
-    comp.projects.set([mockProject]);
-    comp.heatmapPeriod.set('week');
-    comp.entries.set([
-      mkEntry(1, 1, 'Albin', '2026-03-20T09:00:00', '2026-03-20T17:00:00'), // 8h
-      mkEntry(2, 2, 'totof', '2026-03-20T09:00:00', '2026-03-20T13:00:00'), // 4h
-    ]);
-
-    // Max should be 8h (Albin's total), not 12h (combined)
-    expect(comp.heatmapMax()).toBeCloseTo(8);
-    fixture.destroy();
-  });
-});
-
-/**
- * US-007: Heatmap week bucket must correctly aggregate entries within the week
- *
- * As a user viewing the heatmap in week mode,
- * I want each column to accurately sum the hours for that week only,
- * without double-counting or missing entries.
- */
-describe('US-007: Heatmap week buckets must aggregate correctly', () => {
-  let httpMock: HttpTestingController;
-
-  afterEach(() => { httpMock.verify(); TestBed.resetTestingModule(); });
-
-  it('entries in different weeks should appear in separate buckets', () => {
-    const { fixture, comp, httpMock: hm } = createComponent();
-    httpMock = hm;
-
-    comp.client.set(mockClient);
-    comp.projects.set([mockProject]);
-    comp.heatmapPeriod.set('week');
-    comp.entries.set([
-      mkEntry(1, 1, 'Albin', '2026-03-16T09:00:00', '2026-03-16T11:00:00'), // Week of March 16
-      mkEntry(2, 1, 'Albin', '2026-03-23T09:00:00', '2026-03-23T12:00:00'), // Week of March 23
-    ]);
-
-    const week16 = new Date('2026-03-16T00:00:00');
-    const week23 = new Date('2026-03-23T00:00:00');
-    expect(comp.getHoursForDevInBucket(1, week16)).toBeCloseTo(2);
-    expect(comp.getHoursForDevInBucket(1, week23)).toBeCloseTo(3);
-    fixture.destroy();
-  });
-});
-
-/**
  * US-008: Loading entries should fetch ALL entries without date restriction
  *
  * As a user viewing a client page,
@@ -362,47 +268,6 @@ describe('US-008: loadEntries should fetch all entries without date restriction'
     expect(req.request.params.has('startDate')).toBe(false);
     expect(req.request.params.has('endDate')).toBe(false);
     req.flush([]);
-    fixture.destroy();
-  });
-});
-
-/**
- * US-009: Heatmap trimester buckets must use correct quarter boundaries
- *
- * As a user viewing the trimester heatmap,
- * I want quarters to start on Jan 1, Apr 1, Jul 1, Oct 1,
- * and be labeled Q1-Q4 with the correct year.
- */
-describe('US-009: Trimester buckets must align to quarter boundaries', () => {
-  let httpMock: HttpTestingController;
-
-  afterEach(() => { httpMock.verify(); TestBed.resetTestingModule(); });
-
-  it('trimester buckets should start on quarter boundaries', () => {
-    const { fixture, comp, httpMock: hm } = createComponent();
-    httpMock = hm;
-
-    comp.heatmapPeriod.set('trimester');
-    const buckets = comp.heatmapBuckets();
-    expect(buckets.length).toBe(8);
-
-    // Every bucket month should be 0, 3, 6, or 9 (Jan, Apr, Jul, Oct)
-    for (const b of buckets) {
-      expect([0, 3, 6, 9]).toContain(b.getMonth());
-      expect(b.getDate()).toBe(1);
-    }
-    fixture.destroy();
-  });
-
-  it('formatBucketLabel should show Q1-Q4 with year for trimesters', () => {
-    const { fixture, comp, httpMock: hm } = createComponent();
-    httpMock = hm;
-
-    comp.heatmapPeriod.set('trimester');
-    expect(comp.formatBucketLabel(new Date(2026, 0, 1))).toBe('Q1 2026');
-    expect(comp.formatBucketLabel(new Date(2026, 3, 1))).toBe('Q2 2026');
-    expect(comp.formatBucketLabel(new Date(2026, 6, 1))).toBe('Q3 2026');
-    expect(comp.formatBucketLabel(new Date(2026, 9, 1))).toBe('Q4 2026');
     fixture.destroy();
   });
 });
@@ -579,28 +444,4 @@ describe('US-011: Client hours must display correctly for multiple devs (Albin 1
     fixture.destroy();
   });
 
-  it('should aggregate entries from multiple projects in the heatmap', () => {
-    const { fixture, comp, httpMock: hm } = createComponent();
-    httpMock = hm;
-
-    comp.client.set(mockClient);
-    comp.projects.set([mockProject, project2]);
-    comp.entries.set([...albinEntries, ...totofEntries]);
-    comp.heatmapPeriod.set('week');
-
-    // Week of March 16 (Mon)
-    const week16 = new Date('2026-03-16T00:00:00');
-    const albinWeek16 = comp.getHoursForDevInBucket(1, week16);
-    // Albin: 3h (Mar 16) + 2.5h (Mar 17) + 3h (Mar 18) + 2.5h (Mar 19) = 11h
-    expect(albinWeek16).toBeCloseTo(11);
-
-    const totofWeek16 = comp.getHoursForDevInBucket(2, week16);
-    // totof: 4h (Mar 16) + 3.5h (Mar 18) = 7.5h
-    expect(totofWeek16).toBeCloseTo(7.5);
-
-    const totalWeek16 = comp.getTotalHoursForBucket(week16);
-    expect(totalWeek16).toBeCloseTo(18.5);
-
-    fixture.destroy();
-  });
 });

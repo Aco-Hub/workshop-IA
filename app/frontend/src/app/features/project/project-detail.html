@@ -116,27 +116,8 @@
     }
   </section>
 
-  <!-- View toggle -->
-  <div class="view-controls">
-    <div class="view-switcher" role="group">
-      <button
-        class="view-btn"
-        [class.active]="viewMode() === 'swimlane'"
-        (click)="viewMode.set('swimlane')"
-        data-testid="swimlane-btn"
-      >{{ 'project.swimlane' | translate }}</button>
-      <button
-        class="view-btn"
-        [class.active]="viewMode() === 'heatmap'"
-        (click)="viewMode.set('heatmap')"
-        data-testid="heatmap-btn"
-      >{{ 'project.heatmap' | translate }}</button>
-    </div>
-  </div>
-
   <!-- Swimlane view -->
-  @if (viewMode() === 'swimlane') {
-    <div class="swimlane-container" data-testid="swimlane-view">
+  <div class="swimlane-container" data-testid="swimlane-view">
       @if (swimlaneData().rows.length === 0) {
         <app-empty-state message="calendar.no_entries" icon="📊"></app-empty-state>
       } @else {
@@ -188,77 +169,6 @@
         </div>
       }
     </div>
-  }
-
-  <!-- Heatmap view -->
-  @if (viewMode() === 'heatmap') {
-    <div class="heatmap-period-switcher">
-      <button class="period-btn" [class.active]="heatmapPeriod() === 'day'" (click)="heatmapPeriod.set('day')" data-testid="heatmap-period-day">
-        {{ 'calendar.day' | translate }}
-      </button>
-      <button class="period-btn" [class.active]="heatmapPeriod() === 'week'" (click)="heatmapPeriod.set('week')" data-testid="heatmap-period-week">
-        {{ 'calendar.week' | translate }}
-      </button>
-      <button class="period-btn" [class.active]="heatmapPeriod() === 'month'" (click)="heatmapPeriod.set('month')" data-testid="heatmap-period-month">
-        {{ 'calendar.month' | translate }}
-      </button>
-      <button class="period-btn" [class.active]="heatmapPeriod() === 'trimester'" (click)="heatmapPeriod.set('trimester')" data-testid="heatmap-period-trimester">
-        {{ 'project.trimester' | translate }}
-      </button>
-    </div>
-    <div class="heatmap-container" data-testid="heatmap-view">
-      @if (heatmapData().devs.length === 0) {
-        <app-empty-state message="developer.no_developers" icon="📊"></app-empty-state>
-      } @else {
-        <div class="heatmap-table">
-          <!-- Header: bucket labels -->
-          <div class="heatmap-row heatmap-header">
-            <div class="heatmap-dev-label"></div>
-            @for (bucket of heatmapData().buckets; track bucket.toISOString()) {
-              <div class="heatmap-week-label">{{ formatBucketLabel(bucket) }}</div>
-            }
-          </div>
-
-          <!-- Developer rows -->
-          @for (dev of heatmapData().devs; track dev.id) {
-            <div class="heatmap-row">
-              <div class="heatmap-dev-label">
-                <span class="heatmap-dev-color" [style.background-color]="getDevColor(dev.id)"></span>
-                <span class="heatmap-dev-name">{{ dev.username }}</span>
-              </div>
-              @for (bucket of heatmapData().buckets; track bucket.toISOString()) {
-                @let hours = heatmapData().getHours(dev.id, bucket);
-                <div
-                  class="heatmap-cell"
-                  [style.background-color]="getDevHeatColor(dev.id, getHeatIntensity(hours, heatmapData().maxHours))"
-                  [title]="hours.toFixed(1) + 'h'"
-                  data-testid="heatmap-cell"
-                >
-                </div>
-              }
-            </div>
-          }
-
-          <!-- Total row -->
-          <div class="heatmap-row heatmap-total-row">
-            <div class="heatmap-dev-label">
-              <span class="heatmap-dev-name total-label">{{ 'common.total' | translate }}</span>
-            </div>
-            @for (bucket of heatmapData().buckets; track bucket.toISOString()) {
-              @let total = heatmapData().getTotalHours(bucket);
-              <div
-                class="heatmap-cell heatmap-total-cell"
-                [title]="total.toFixed(1) + 'h'"
-                data-testid="heatmap-total-cell"
-              >
-                <span class="total-hours">{{ total.toFixed(1) }}h</span>
-              </div>
-            }
-          </div>
-        </div>
-      }
-    </div>
-  }
 
   }
 

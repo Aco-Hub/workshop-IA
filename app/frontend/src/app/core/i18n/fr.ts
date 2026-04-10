@@ -123,7 +123,6 @@ export const fr: Record<string, string> = {
   'project.total_hours': 'Total heures',
   'project.hours_per_dev': 'Heures par développeur',
   'project.swimlane': 'Swimlane',
-  'project.heatmap': 'Heatmap',
   'project.zoom_day': 'Jour',
   'project.zoom_week': 'Semaine',
   'project.zoom_month': 'Mois',

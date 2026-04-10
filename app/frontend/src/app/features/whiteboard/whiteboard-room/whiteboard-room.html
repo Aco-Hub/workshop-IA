@@ -1,0 +1,128 @@
+<div class="whiteboard-layout">
+  <app-whiteboard-topbar
+    [room]="room()"
+    [connectedUsers]="connectedUsers()"
+    (backClicked)="goBack()"
+  />
+
+  <div class="canvas-area">
+    <app-whiteboard-toolbar
+      [activeTool]="activeTool()"
+      [activeColor]="activeColor()"
+      (toolChanged)="onToolChange($event)"
+      (colorChanged)="onColorChange($event)"
+      (commentsToggled)="toggleComments()"
+      (imageRequested)="onImageRequested()"
+      (linkRequested)="onLinkRequested()"
+    />
+
+    <canvas
+      #canvasRef
+      class="whiteboard-canvas"
+      (pointerdown)="onPointerDown($event)"
+      (pointermove)="onPointerMove($event)"
+      (pointerup)="onPointerUp($event)"
+    ></canvas>
+
+    <!-- Inline text input overlay -->
+    @if (pendingTextElement()) {
+      <input
+        class="inline-text-input"
+        [style.left.px]="pendingTextPosition().left"
+        [style.top.px]="pendingTextPosition().top"
+        [placeholder]="'whiteboard.enter_text' | translate"
+        (keydown.enter)="submitTextInput($event)"
+        (keydown.escape)="cancelTextInput()"
+        (blur)="submitTextInput($event)"
+        data-testid="wb-inline-text"
+        autofocus
+      />
+    }
+
+    <!-- Hidden file input for image upload -->
+    <input
+      #fileInput
+      type="file"
+      accept="image/*"
+      class="sr-only"
+      (change)="onImageSelected($event)"
+      data-testid="wb-file-input"
+    />
+
+    <!-- Remote cursors overlay -->
+    <svg class="cursor-overlay">
+      @for (cursor of remoteCursors(); track cursor.userId) {
+        <g>
+          <circle [attr.cx]="cursor.x" [attr.cy]="cursor.y" r="6" [attr.fill]="cursor.color" opacity="0.8" />
+          <text
+            [attr.x]="cursor.x + 12"
+            [attr.y]="cursor.y - 4"
+            [attr.fill]="cursor.color"
+            font-size="12"
+            font-weight="500"
+            font-family="Inter, sans-serif"
+          >{{ cursor.username }}</text>
+        </g>
+      }
+    </svg>
+
+    <app-whiteboard-bottom-bar
+      [activeTool]="activeTool()"
+      [activeColor]="activeColor()"
+      (colorChanged)="onColorChange($event)"
+      (fillModeChanged)="onFillModeChange($event)"
+      (fontSizeChanged)="onFontSizeChange($event)"
+      (fontFamilyChanged)="onFontFamilyChange($event)"
+      (strokeWidthChanged)="onStrokeWidthChange($event)"
+    />
+
+    <app-whiteboard-zoom
+      [zoomLevel]="zoomLevel()"
+      (zoomIn)="onZoomIn()"
+      (zoomOut)="onZoomOut()"
+      (zoomReset)="onZoomReset()"
+    />
+  </div>
+
+  @if (showComments()) {
+    <app-whiteboard-comments
+      [comments]="comments()"
+      (commentAdded)="onCommentAdded($event)"
+      (commentDeleted)="onCommentDeleted($event)"
+      (panelClosed)="toggleComments()"
+    />
+  }
+</div>
+
+<!-- Link URL modal -->
+<app-modal
+  [isOpen]="showLinkModal()"
+  [title]="'whiteboard.enter_url' | translate"
+  (closed)="showLinkModal.set(false)"
+>
+  <form (ngSubmit)="submitLinkModal()" class="modal-form">
+    <div class="form-group">
+      <label class="form-label" for="link-url">URL</label>
+      <input
+        id="link-url"
+        type="url"
+        class="form-input"
+        [placeholder]="'whiteboard.url_placeholder' | translate"
+        [ngModel]="linkUrl()"
+        (ngModelChange)="linkUrl.set($event)"
+        name="linkUrl"
+        required
+        autofocus
+        data-testid="wb-link-url-input"
+      />
+    </div>
+    <div class="form-actions">
+      <button type="button" class="btn btn-secondary" (click)="showLinkModal.set(false)">
+        {{ 'common.cancel' | translate }}
+      </button>
+      <button type="submit" class="btn btn-primary" [disabled]="!linkUrl().trim()">
+        {{ 'common.create' | translate }}
+      </button>
+    </div>
+  </form>
+</app-modal>

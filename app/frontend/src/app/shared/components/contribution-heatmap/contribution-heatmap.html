@@ -1,0 +1,133 @@
+<section class="heatmap-wrapper" aria-label="Contribution heatmap" data-testid="contribution-heatmap">
+
+  <!-- Controls -->
+  <div class="heatmap-controls">
+    <div class="heatmap-view-toggle" role="group" aria-label="View toggle">
+      <button
+        [class.active]="view() === 'day'"
+        (click)="setView('day')"
+        data-testid="heatmap-view-day"
+      >{{ 'calendar.day' | translate }}</button>
+      <button
+        [class.active]="view() === 'week'"
+        (click)="setView('week')"
+        data-testid="heatmap-view-week"
+      >{{ 'calendar.week' | translate }}</button>
+      <button
+        [class.active]="view() === 'month'"
+        (click)="setView('month')"
+        data-testid="heatmap-view-month"
+      >{{ 'calendar.month' | translate }}</button>
+    </div>
+  </div>
+
+  @if (devRows().length === 0) {
+    <p class="heatmap-empty">{{ 'calendar.no_entries' | translate }}</p>
+  } @else {
+
+    <!-- Day view -->
+    @if (view() === 'day') {
+      <div class="heatmap-day-wrapper" data-testid="heatmap-grid">
+        <!-- Month labels -->
+        <div class="heatmap-month-labels" [style.grid-template-columns]="'120px repeat(' + totalColumns() + ', 14px)'">
+          <span class="month-spacer"></span>
+          @for (ml of monthLabels(); track ml.month) {
+            <span class="month-label" [style.grid-column-start]="ml.column + 1">
+              {{ ('month.' + ml.month) | translate | slice:0:3 }}
+            </span>
+          }
+        </div>
+
+        <!-- Per-developer rows -->
+        @for (devRow of devRows(); track devRow.devId) {
+          <div class="heatmap-dev-row" data-testid="heatmap-dev-row">
+            <div class="heatmap-dev-label">
+              <div class="heatmap-dev-color" [style.background-color]="devRow.color"></div>
+              <span class="heatmap-dev-name">{{ devRow.devName }}</span>
+            </div>
+            <div
+              class="heatmap-cells heatmap-cells--day"
+              [style.grid-template-columns]="'repeat(' + totalColumns() + ', 12px)'"
+            >
+              @for (cell of devRow.cells; track cell.key) {
+                <div
+                  class="heatmap-cell"
+                  [style.grid-row]="cell.row"
+                  [style.grid-column]="cell.col"
+                  [style.background]="getCellBackground(devRow.color, cell.level)"
+                  [title]="cell.tooltip"
+                ></div>
+              }
+            </div>
+          </div>
+        }
+      </div>
+    }
+
+    <!-- Week view -->
+    @if (view() === 'week') {
+      <div class="heatmap-compact-wrapper" data-testid="heatmap-grid">
+        @for (devRow of devRows(); track devRow.devId) {
+          <div class="heatmap-dev-row heatmap-dev-row--compact" data-testid="heatmap-dev-row">
+            <div class="heatmap-dev-label">
+              <div class="heatmap-dev-color" [style.background-color]="devRow.color"></div>
+              <span class="heatmap-dev-name">{{ devRow.devName }}</span>
+            </div>
+            <div class="heatmap-cells heatmap-cells--week">
+              @for (cell of devRow.cells; track cell.key) {
+                <div
+                  class="heatmap-cell heatmap-cell--large"
+                  [style.background]="getCellBackground(devRow.color, cell.level)"
+                  [title]="cell.tooltip"
+                ></div>
+              }
+            </div>
+          </div>
+        }
+      </div>
+    }
+
+    <!-- Month view -->
+    @if (view() === 'month') {
+      <div class="heatmap-compact-wrapper" data-testid="heatmap-grid">
+        @for (devRow of devRows(); track devRow.devId) {
+          <div class="heatmap-dev-row heatmap-dev-row--compact" data-testid="heatmap-dev-row">
+            <div class="heatmap-dev-label">
+              <div class="heatmap-dev-color" [style.background-color]="devRow.color"></div>
+              <span class="heatmap-dev-name">{{ devRow.devName }}</span>
+            </div>
+            <div class="heatmap-cells heatmap-cells--month">
+              @for (cell of devRow.cells; track cell.key) {
+                <div class="heatmap-month-cell">
+                  <div
+                    class="heatmap-cell heatmap-cell--large"
+                    [style.background]="getCellBackground(devRow.color, cell.level)"
+                    [title]="cell.tooltip"
+                  ></div>
+                  @if ($first) {
+                    <!-- Month labels only on first dev row are handled outside -->
+                  }
+                </div>
+              }
+            </div>
+          </div>
+        }
+        <!-- Month labels below -->
+        <div class="heatmap-month-labels-row">
+          @for (m of [0,1,2,3,4,5,6,7,8,9,10,11]; track m) {
+            <span class="heatmap-month-name">{{ ('month.' + m) | translate | slice:0:3 }}</span>
+          }
+        </div>
+      </div>
+    }
+  }
+
+  <!-- Footer -->
+  <div class="heatmap-footer">
+    <div class="heatmap-year-nav">
+      <button class="heatmap-nav-btn" (click)="yearBack()" data-testid="heatmap-year-back" aria-label="Previous year">&#8249;</button>
+      <span class="heatmap-year" data-testid="heatmap-year">{{ year() }}</span>
+      <button class="heatmap-nav-btn" (click)="yearForward()" data-testid="heatmap-year-forward" aria-label="Next year">&#8250;</button>
+    </div>
+  </div>
+</section>

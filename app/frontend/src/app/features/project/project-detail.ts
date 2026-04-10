@@ -18,10 +18,8 @@ import { LoadingSpinnerComponent } from '../../shared/components/loading-spinner
 import { EmptyStateComponent } from '../../shared/components/empty-state/empty-state';
 import { I18nService } from '../../core/services/i18n.service';
 import { ExportService } from '../../core/services/export.service';
-import { buildDevColorMap, getDevColor, getDevHeatColor } from '../../core/utils/dev-colors';
+import { buildDevColorMap, getDevColor } from '../../core/utils/dev-colors';
 
-export type ViewMode = 'swimlane' | 'heatmap';
-export type HeatmapPeriod = 'day' | 'week' | 'month' | 'trimester';
 
 interface DevHours {
   developer: Developer;
@@ -55,9 +53,6 @@ export class ProjectDetailComponent implements OnInit {
   loading = signal(true);
   currentUser = this._auth.currentUser;
   isAdmin = computed(() => this.currentUser()?.role === 'ADMIN');
-
-  viewMode = signal<ViewMode>('heatmap');
-  heatmapPeriod = signal<HeatmapPeriod>('week');
 
   showExportPanel = signal(false);
   exportStartDate = signal('');
@@ -95,30 +90,6 @@ export class ProjectDetailComponent implements OnInit {
       }
     });
     return Array.from(map.values()).sort((a, b) => b.hours - a.hours);
-  });
-
-  readonly heatmapData = computed(() => {
-    const buckets = this.getHeatmapBuckets();
-    const devs = this.project()?.assignedDevelopers || [];
-    const entries = this.entries();
-
-    return {
-      buckets,
-      devs,
-      maxHours: this._getMaxBucketHours(buckets, entries),
-      getHours: (devId: number, bucketStart: Date): number => {
-        const end = this.getBucketEnd(bucketStart);
-        return entries
-          .filter(e => e.developerId === devId && new Date(e.startTime) >= bucketStart && new Date(e.startTime) < end)
-          .reduce((sum, e) => sum + (new Date(e.endTime).getTime() - new Date(e.startTime).getTime()) / 3600000, 0);
-      },
-      getTotalHours: (bucketStart: Date): number => {
-        const end = this.getBucketEnd(bucketStart);
-        return entries
-          .filter(e => new Date(e.startTime) >= bucketStart && new Date(e.startTime) < end)
-          .reduce((sum, e) => sum + (new Date(e.endTime).getTime() - new Date(e.startTime).getTime()) / 3600000, 0);
-      }
-    };
   });
 
   readonly PIXELS_PER_DAY = 160;
@@ -304,86 +275,6 @@ export class ProjectDetailComponent implements OnInit {
     });
   }
 
-  getHeatmapBuckets(): Date[] {
-    const period = this.heatmapPeriod();
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const buckets: Date[] = [];
-
-    if (period === 'day') {
-      for (let i = 29; i >= 0; i--) {
-        const d = new Date(today);
-        d.setDate(d.getDate() - i);
-        buckets.push(d);
-      }
-    } else if (period === 'week') {
-      const start = new Date(today);
-      start.setDate(start.getDate() - 13 * 7);
-      const monday = this._getMonday(start);
-      for (let i = 0; i < 14; i++) {
-        const d = new Date(monday);
-        d.setDate(d.getDate() + i * 7);
-        buckets.push(d);
-      }
-    } else if (period === 'month') {
-      for (let i = 11; i >= 0; i--) {
-        const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
-        buckets.push(d);
-      }
-    } else {
-      const currentQuarter = Math.floor(today.getMonth() / 3);
-      for (let i = 7; i >= 0; i--) {
-        const qMonth = currentQuarter * 3 - i * 3;
-        const d = new Date(today.getFullYear(), qMonth, 1);
-        buckets.push(d);
-      }
-    }
-    return buckets;
-  }
-
-  getBucketEnd(bucketStart: Date): Date {
-    const period = this.heatmapPeriod();
-    const end = new Date(bucketStart);
-    if (period === 'day') {
-      end.setDate(end.getDate() + 1);
-    } else if (period === 'week') {
-      end.setDate(end.getDate() + 7);
-    } else if (period === 'month') {
-      end.setMonth(end.getMonth() + 1);
-    } else {
-      end.setMonth(end.getMonth() + 3);
-    }
-    return end;
-  }
-
-  formatBucketLabel(date: Date): string {
-    const period = this.heatmapPeriod();
-    if (period === 'day' || period === 'week') {
-      return `${this._pad(date.getDate())}/${this._pad(date.getMonth() + 1)}`;
-    }
-    if (period === 'month') {
-      const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-      return monthNames[date.getMonth()];
-    }
-    const q = Math.floor(date.getMonth() / 3) + 1;
-    return `Q${q} ${date.getFullYear()}`;
-  }
-
-  getHeatIntensity(hours: number, max: number): number {
-    return hours / max;
-  }
-
-  getHeatColor(intensity: number): string {
-    if (intensity === 0) {
-      return 'var(--bg-tertiary)';
-    }
-    return `rgba(35, 131, 226, ${0.15 + intensity * 0.85})`;
-  }
-
-  getDevHeatColor(devId: number, intensity: number): string {
-    return getDevHeatColor(devId, intensity);
-  }
-
   getDevColor(devId: number): string {
     return getDevColor(devId);
   }
@@ -440,32 +331,6 @@ export class ProjectDetailComponent implements OnInit {
   }
 
   // Private methods
-
-  private _getMaxBucketHours(buckets: Date[], entries: TimeEntry[]): number {
-    const devs = this.project()?.assignedDevelopers || [];
-    let max = 0;
-    for (const dev of devs) {
-      for (const b of buckets) {
-        const end = this.getBucketEnd(b);
-        const hours = entries
-          .filter(e => e.developerId === dev.id && new Date(e.startTime) >= b && new Date(e.startTime) < end)
-          .reduce((sum, e) => sum + (new Date(e.endTime).getTime() - new Date(e.startTime).getTime()) / 3600000, 0);
-        if (hours > max) {
-          max = hours;
-        }
-      }
-    }
-    return max || 1;
-  }
-
-  private _getMonday(date: Date): Date {
-    const d = new Date(date);
-    const day = d.getDay();
-    const diff = day === 0 ? -6 : 1 - day;
-    d.setDate(d.getDate() + diff);
-    d.setHours(0, 0, 0, 0);
-    return d;
-  }
 
   private _pad(n: number): string {
     return n.toString().padStart(2, '0');

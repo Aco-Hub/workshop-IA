@@ -1,0 +1,72 @@
+<main class="whiteboard-list">
+  <header class="whiteboard-header">
+    <h1>{{ 'whiteboard.title' | translate }}</h1>
+    <button
+      class="btn btn-primary"
+      (click)="openCreateModal()"
+      data-testid="create-whiteboard-btn"
+    >
+      <span class="action-icon">+</span>
+      {{ 'whiteboard.create' | translate }}
+    </button>
+  </header>
+
+  @if (rooms().length === 0) {
+    <p class="empty-state">{{ 'whiteboard.no_rooms' | translate }}</p>
+  }
+
+  <section class="rooms-grid">
+    @for (room of rooms(); track room.id) {
+      <a
+        class="room-card"
+        [routerLink]="['/whiteboard', room.id]"
+        [attr.data-testid]="'room-card-' + room.id"
+      >
+        <div class="room-card-preview">
+          <div class="dot-grid-preview"></div>
+        </div>
+        <div class="room-card-info">
+          <span class="room-name">{{ room.name }}</span>
+          <div class="room-meta">
+            @if (room.createdBy.discordAvatarUrl) {
+              <img class="room-avatar" [src]="room.createdBy.discordAvatarUrl" [alt]="room.createdBy.username" />
+            } @else {
+              <span class="room-avatar-placeholder" [style.background-color]="getCreatorColor(room.createdBy.id)">{{ getCreatorInitial(room) }}</span>
+            }
+            <span class="room-creator">{{ room.createdBy.username }}</span>
+          </div>
+        </div>
+      </a>
+    }
+  </section>
+</main>
+
+<app-modal
+  [isOpen]="showCreateModal()"
+  [title]="'whiteboard.create' | translate"
+  (closed)="showCreateModal.set(false)"
+>
+  <form (ngSubmit)="submitCreate()" class="modal-form">
+    <div class="form-group">
+      <label class="form-label" for="room-name">{{ 'whiteboard.name' | translate }}</label>
+      <input
+        id="room-name"
+        type="text"
+        class="form-input"
+        [value]="newRoomName()"
+        (input)="newRoomName.set($any($event.target).value)"
+        required
+        data-testid="new-room-name-input"
+      />
+    </div>
+    <div class="form-actions">
+      <button type="button" class="btn btn-secondary" (click)="showCreateModal.set(false)">
+        {{ 'common.cancel' | translate }}
+      </button>
+      <button type="submit" class="btn btn-primary" [disabled]="loading()">
+        @if (loading()) { {{ 'common.loading' | translate }} }
+        @else { {{ 'common.create' | translate }} }
+      </button>
+    </div>
+  </form>
+</app-modal>

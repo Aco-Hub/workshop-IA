@@ -1,0 +1,54 @@
+<header class="topbar">
+  <div class="topbar-left">
+    <button class="back-btn" (click)="goBack()" data-testid="wb-back-btn">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="m15 18-6-6 6-6"/>
+      </svg>
+    </button>
+    @if (room()) {
+      <div class="room-info">
+        <span class="room-title">{{ room()!.name }}</span>
+        <span class="room-subtitle">
+          {{ 'whiteboard.last_edited' | translate }}, {{ formatLastEdited() }}
+          <svg class="lock-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="11" width="18" height="11" rx="2"/>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+          </svg>
+        </span>
+      </div>
+    }
+  </div>
+
+  <div class="topbar-center">
+    <div class="connected-users">
+      @for (user of connectedUsers(); track user.userId; let i = $index) {
+        @if (i < 5) {
+          <div
+            class="user-bubble"
+            [style.background-color]="getUserColor(user.userId)"
+            [style.z-index]="10 - i"
+            [title]="user.username"
+          >
+            {{ getInitial(user.username) }}
+          </div>
+        }
+      }
+      @if (connectedUsers().length > 5) {
+        <div class="user-bubble user-bubble--more">
+          +{{ connectedUsers().length - 5 }}
+        </div>
+      }
+    </div>
+  </div>
+
+  <div class="topbar-right">
+    <button class="share-btn" data-testid="wb-share-btn">
+      {{ 'whiteboard.share' | translate }}
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
+        <polyline points="16 6 12 2 8 6"/>
+        <line x1="12" y1="2" x2="12" y2="15"/>
+      </svg>
+    </button>
+  </div>
+</header>
