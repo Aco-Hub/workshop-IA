@@ -1,10 +1,15 @@
 #!/usr/bin/env python3
 """
-Claude Code Config - Export & Import (cross-platform: macOS, Linux, Windows)
+Claude Code + GitHub Copilot Config - Export & Import (cross-platform: macOS, Linux, Windows)
 
 Usage:
     python setup-claude-code.py export   -> packs your config into claude-config/
     python setup-claude-code.py import   -> restores config from claude-config/
+
+GitHub Copilot CLI config paths:
+    Windows : %APPDATA%\\GitHub Copilot\\
+    macOS   : ~/.config/github-copilot/
+    Linux   : ~/.config/github-copilot/
 """
 import json
 import os
@@ -33,21 +38,52 @@ def get_export_dir() -> Path:
     return Path(__file__).resolve().parent / "claude-config"
 
 
+def get_github_copilot_dir() -> Path:
+    """Return the GitHub Copilot CLI config directory for the current OS.
+
+    Windows : %APPDATA%\\GitHub Copilot\\
+    macOS   : ~/.config/github-copilot/
+    Linux   : ~/.config/github-copilot/
+    """
+    system = platform.system()
+    if system == "Windows":
+        appdata = os.environ.get("APPDATA")
+        if not appdata:
+            raise EnvironmentError("%%APPDATA%% is not set — cannot locate GitHub Copilot config.")
+        return Path(appdata) / "GitHub Copilot"
+    else:
+        # macOS and Linux share the same XDG-style path
+        return Path.home() / ".config" / "github-copilot"
+
+
 CONFIG_FILES = [
     "settings.json",
     "settings.local.json",
 ]
 
-# Regex to redact API keys/secrets/tokens in JSON values
+COPILOT_CONFIG_FILES = [
+    "apps.json",
+    "oauth.json",
+    "versions.json",
+    "intellij/mcp.json",
+    "intellij/sampling.json",
+]
+
+# Regex to redact token/secret/password/api-key JSON values.
+# Covers snake_case and camelCase keys (e.g., oauth_token, accessToken).
 SECRET_PATTERN = re.compile(
-    r'("(?:[^"]*(?:_KEY|_SECRET|_TOKEN|_PASSWORD|API_KEY|SECRET_KEY))"'
-    r'\s*:\s*)"[^"]+"',
+    r'("(?:[^"]*(?:token|secret|password|api[_-]?key))"\s*:\s*)"[^"]+"',
     re.IGNORECASE,
 )
 
 
 def redact_secrets(text: str) -> str:
     return SECRET_PATTERN.sub(r'\1"YOUR_VALUE_HERE"', text)
+
+
+def copy_file_with_parent(src: Path, dst: Path):
+    dst.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(src, dst)
 
 
 def copy_tree(src: Path, dst: Path):
@@ -126,15 +162,85 @@ def export_config():
         shutil.copy2(markets_json, export_dir / "known_marketplaces.json")
         print("  [copied] known_marketplaces.json")
 
-    # 7. Agents
+    # 7. Agentse
     agents_defs = claude_dir / "agents"
     if agents_defs.is_dir() and any(agents_defs.iterdir()):
         copy_tree(agents_defs, export_dir / "agents")
         print("  [copied] agents/")
 
+    # 8. GitHub Copilot CLI config (OS-aware)
+    export_github_copilot(export_dir)
+
     print(f"\n=== Export complete: {export_dir} ===")
     print("\nReview claude-config/mcp.json and fill in any redacted API keys.")
     print("Commit the claude-config/ folder to share your setup.")
+
+
+# ── GitHub Copilot helpers ─────────────────────────────────────
+
+def export_github_copilot(export_dir: Path):
+    """Copy GitHub Copilot CLI config files into export_dir/github-copilot/."""
+    copilot_dir = get_github_copilot_dir()
+    if not copilot_dir.is_dir():
+        print(f"  [skip] GitHub Copilot config not found at {copilot_dir}")
+        return
+
+    dst = export_dir / "github-copilot"
+    if dst.exists():
+        shutil.rmtree(dst)
+    dst.mkdir(parents=True, exist_ok=True)
+
+    copied_count = 0
+    for rel_path in COPILOT_CONFIG_FILES:
+        src_file = copilot_dir / rel_path
+        if not src_file.is_file():
+            continue
+
+        dst_file = dst / rel_path
+        if src_file.suffix.lower() == ".json":
+            text = src_file.read_text(encoding="utf-8")
+            dst_file.parent.mkdir(parents=True, exist_ok=True)
+            dst_file.write_text(redact_secrets(text), encoding="utf-8")
+        else:
+            copy_file_with_parent(src_file, dst_file)
+        copied_count += 1
+
+    if copied_count == 0:
+        print(f"  [skip] No managed GitHub Copilot config files found at {copilot_dir}")
+        return
+
+    print(f"  [copied] {copilot_dir} -> github-copilot/ ({copied_count} file(s))")
+    print(f"           (OS: {platform.system()} — path: {copilot_dir})")
+
+
+def import_github_copilot(export_dir: Path):
+    """Restore GitHub Copilot CLI config files from export_dir/github-copilot/."""
+    src = export_dir / "github-copilot"
+    if not src.is_dir():
+        print("  [skip] No github-copilot/ folder in export — nothing to restore.")
+        return
+
+    copilot_dir = get_github_copilot_dir()
+    copilot_dir.mkdir(parents=True, exist_ok=True)
+
+    restored_count = 0
+    for rel_path in COPILOT_CONFIG_FILES:
+        src_file = src / rel_path
+        if not src_file.is_file():
+            continue
+
+        target = copilot_dir / rel_path
+        target.parent.mkdir(parents=True, exist_ok=True)
+        backup_file(target)
+        shutil.copy2(src_file, target)
+        restored_count += 1
+
+    if restored_count == 0:
+        print("  [skip] No managed GitHub Copilot config files found in export.")
+        return
+
+    print(f"  [restored] GitHub Copilot config -> {copilot_dir}")
+    print(f"             (OS: {platform.system()} — path: {copilot_dir})")
 
 
 # ── Import ────────────────────────────────────────────────────
@@ -259,6 +365,9 @@ def import_config():
                 print("  -> Claude CLI not found. Install plugins manually:")
             for p in plugin_names:
                 print(f"       claude plugin install {p}")
+
+    # 7. GitHub Copilot CLI config (OS-aware)
+    import_github_copilot(export_dir)
 
     print("\n=== Import complete ===")
     print("\nNext steps:")

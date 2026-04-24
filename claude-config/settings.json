@@ -1,26 +1,23 @@
 {
   "permissions": {
     "allow": [
-      "Bash",
-      "Read",
-      "Edit",
-      "Write",
-      "WebFetch"
+      "Bash(sudo -u postgres psql -c \"\\\\l\")",
+      "Bash(sudo -u postgres psql -d timesheet_v3 -c \"SELECT version, description, success FROM flyway_schema_history;\")",
+      "Bash(curl -sf http://localhost:8082/actuator/health)"
     ]
   },
-  "enabledPlugins": {
-    "voltagent-core-dev@voltagent-subagents": true,
-    "voltagent-lang@voltagent-subagents": true,
-    "voltagent-qa-sec@voltagent-subagents": true,
-    "voltagent-data-ai@voltagent-subagents": true
-  },
-  "extraKnownMarketplaces": {
-    "voltagent-subagents": {
-      "source": {
-        "source": "github",
-        "repo": "VoltAgent/awesome-claude-code-subagents"
+  "hooks": {
+    "Notification": [],
+    "PermissionRequest": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "notify-send 'Claude Code' 'Requesting permission to execute' --urgency=critical --icon=dialog-question --expire-time=5000"
+          }
+        ]
       }
-    }
-  },
-  "effortLevel": "max"
+    ]
+  }
 }

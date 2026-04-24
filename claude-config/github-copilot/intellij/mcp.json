@@ -1,0 +1,24 @@
+{
+  "servers": {
+    "com.figma.mcp/mcp": {
+      "type": "stdio",
+      "command": "/home/aco/.nvm/versions/node/v22.22.0/bin/npx",
+      "args": [
+        "-y",
+        "@thirdstrandstudio/mcp-figma@latest"
+      ],
+      "env": {
+        "FIGMA_PERSONAL_ACCESS_TOKEN": "YOUR_VALUE_HERE",
+        "FIGMA_API_KEY": "YOUR_VALUE_HERE"
+      }
+    },
+    "io.github.upstash/context7": {
+      "type": "stdio",
+      "command": "/home/aco/.nvm/versions/node/v22.22.0/bin/npx",
+      "args": [
+        "-y",
+        "@upstash/context7-mcp@latest"
+      ],
+    }
+  }
+}
